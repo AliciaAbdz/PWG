@@ -12,8 +12,8 @@ class Password:
                  include_numbers = True, 
                  include_special_chars = True, 
                  include_mixed_case = True, 
-                 include_cuts = False,
-                 exclude_chars = "",
+                 include_cuts = False, 
+                 exclude_chars = "", 
                  include_chars = "" 
                  ) :
         
@@ -31,7 +31,7 @@ class Password:
 
     # Methods : User Data Manipulation :
 
-    def __get_sorted_list_from_string(self,chars_string) : 
+    def __get_sorted_list_from_string(self, chars_string) : 
         """ 
         Convertit une chaine de caractères en liste triée.
 
@@ -46,7 +46,7 @@ class Password:
         set(sorted_list)
         return sorted_list
 
-    def __get_sorted_chars_string(self,chars_string) : 
+    def __get_sorted_chars_string(self, chars_string) : 
         """ 
         Trie une chaine de caractères.
 
@@ -87,18 +87,18 @@ class Password:
             None.
         """
         essentials_parameters = [
-                                 self.include_letters,
-                                 self.include_numbers,
+                                 self.include_letters, 
+                                 self.include_numbers, 
                                  self.include_special_chars
                                  ]
     
         if not any(essentials_parameters) : 
-            raise Exception("Le mot de passe doit contenir au moins des lettres,"
+            raise Exception("Le mot de passe doit contenir au moins des lettres, "
                             " des chiffres, ou des caractères spéciaux !")
 
     def __validate_optional_parameters_requirements(self) : 
         """ 
-        Permet de valider que si les paramètres "Mixed Case" et/ou "cuts" sont actifs,
+        Permet de valider que si les paramètres "Mixed Case" et/ou "cuts" sont actifs, 
         le paramètre essentiel "Lettre" l'est aussi.
 
         Args : 
@@ -115,7 +115,7 @@ class Password:
     def __get_initial_chars_library(self) : 
 
         """ 
-        Permet de valider que si les paramètres "Mixed Case" et/ou "cuts" sont actifs,
+        Permet de valider que si les paramètres "Mixed Case" et/ou "cuts" sont actifs, 
         le paramètre essentiel "Lettre" l'est aussi.
 
         Args : 
@@ -156,14 +156,14 @@ class Password:
         Returns : 
             None.
         """
-        complex_special_strings = "\"'()*,-./:;[\\]^_`{|}"
+        complex_special_strings = "\"'()*, -./:;[\\]^_`{|}"
         if not self.include_cuts : 
-            complex_special_strings = complex_special_strings.replace("_","").replace("-","")
+            complex_special_strings = complex_special_strings.replace("_", "").replace("-", "")
         for char in self.all_chars : 
             if char in complex_special_strings : 
-                self.all_chars = self.all_chars.replace(char,"")
+                self.all_chars = self.all_chars.replace(char, "")
         
-        print("All chars are >>>",self.all_chars)
+        print("All chars are >>>", self.all_chars)
 
     def __validate_exclude_all_chars(self):
         """ 
@@ -230,8 +230,8 @@ class Password:
             
             # Modify self.include_chars to remove similar elements.
             for char in exclude_from_password : 
-                self.include_chars = self.include_chars.replace(char,"") 
-                self.exclude_chars = self.exclude_chars.replace(char,"") 
+                self.include_chars = self.include_chars.replace(char, "") 
+                self.exclude_chars = self.exclude_chars.replace(char, "") 
 
             # Warn the user about auto exclusion.
             warnings.warn(f"Characters {exclude_from_password} are automatically "
@@ -254,7 +254,7 @@ class Password:
         self.password_chars_library = self.all_chars + self.include_chars
 
         for char in self.exclude_chars : 
-            self.password_chars_library = self.password_chars_library.replace(char,"")
+            self.password_chars_library = self.password_chars_library.replace(char, "")
 
         self.password_chars_library = list(self.password_chars_library)
         self.__separate_chars_category()
@@ -293,8 +293,8 @@ class Password:
         self.password_category_list = []
 
         for list in [
-                     self.password_letter_chars,
-                     self.password_chars_library,
+                     self.password_letter_chars, 
+                     self.password_chars_library, 
                      self.password_special_chars
                      ] :
             
@@ -307,7 +307,7 @@ class Password:
         self.chars_type_available = [ x + 1 for x in range(len(self.password_category_list)) ]
         self.chars_type_available_length = len(self.chars_type_available)
 
-    def __apply_cuts(self,password,separator="-") : 
+    def __apply_cuts(self, password, separator="-") : 
         """ 
         Permet à partir d'un mot de passe déjà créé de générer un autre mot de passe mais
         séquencé et coupé par un séparateur unique.
@@ -335,10 +335,10 @@ class Password:
             if self.include_cuts : 
                 min_cut_percentage = int(self.length/4)
                 max_cut_percentage = int(self.length/2)
-                random_cut_percentage = random.randint(min_cut_percentage,
+                random_cut_percentage = random.randint(min_cut_percentage, 
                                                             max_cut_percentage)
         else : 
-            warnings.warn("Cuts ignored, only available with minimum lenght of 8 characters",
+            warnings.warn("Cuts ignored, only available with minimum lenght of 8 characters", 
                           stacklevel=2)
 
         idx_replace_position_list = list(range(self.length))
@@ -346,7 +346,7 @@ class Password:
                                     # pour prendre en compte le premier caractère.
         idx_replace_position_list.remove(0) # pour ne pas modifier le premier caractère
 
-        for idx,value in enumerate(password_list) : 
+        for idx, value in enumerate(password_list) : 
             if idx in idx_replace_position_list : 
                 password_list[idx-1] = separator
 
@@ -393,22 +393,22 @@ class Password:
             final_number_sequence_set = list(set(final_number_sequence_set))
 
             if num not in self.final_number_sequence : 
-                random_place_in_list = random.randint(1,self.final_number_sequence_length)
+                random_place_in_list = random.randint(1, self.final_number_sequence_length)
                 self.final_number_sequence.pop(random_place_in_list)
-                self.final_number_sequence.insert(random_place_in_list,num)
+                self.final_number_sequence.insert(random_place_in_list, num)
                 # Update final number sequence set
                 final_number_sequence_set = sorted(self.final_number_sequence)
                 final_number_sequence_set = list(set(final_number_sequence_set))
 
         # Generate full securated password :
         values_dict = {
-                        1:self.password_letter_chars,
-                        2:self.password_number_chars,
+                        1:self.password_letter_chars, 
+                        2:self.password_number_chars, 
                         3:self.password_special_chars
                         }
 
         for idx in self.final_number_sequence :
-            for key,character_type in values_dict.items() :
+            for key, character_type in values_dict.items() :
                 if idx == key : 
                     pick_char = random.choice(character_type if character_type else "")
                     self.password += pick_char
@@ -421,13 +421,13 @@ class Password:
 
 if __name__ == "__main__" : 
 
-    password = Password(length = 20,
-                        include_letters = True,
+    password = Password(length = 20, 
+                        include_letters = True, 
                         include_numbers = True, 
-                        include_special_chars = False,
-                        exclude_chars = "",
-                        include_chars = "",
-                        include_mixed_case = True,
+                        include_special_chars = False, 
+                        exclude_chars = "", 
+                        include_chars = "", 
+                        include_mixed_case = True, 
                         include_cuts = True)
 
     password.generate()
