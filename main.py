@@ -107,10 +107,9 @@ class Password:
         Returns : 
             None.
         """
-        if self.include_mixed_case or self.include_cuts : 
+        if self.include_mixed_case : 
             if not self.include_letters : 
-                raise ValueError("Mixed Case et cuts ne marchent qu'avec, au minimum, "
-                                 "des lettres !")
+                raise ValueError("Mixed Case ne marche qu'avec des lettres !")
 
     def __get_initial_chars_library(self) : 
 
@@ -163,8 +162,6 @@ class Password:
             if char in complex_special_strings : 
                 self.all_chars = self.all_chars.replace(char, "")
         
-        print("All chars are >>>", self.all_chars)
-
     def __validate_exclude_all_chars(self):
         """ 
         Permet de valider que le paramètre "Exclude" n'exclut pas toute la chaine de 
@@ -294,7 +291,7 @@ class Password:
 
         for list in [
                      self.password_letter_chars, 
-                     self.password_chars_library, 
+                     self.password_number_chars, 
                      self.password_special_chars
                      ] :
             
@@ -401,17 +398,23 @@ class Password:
                 final_number_sequence_set = list(set(final_number_sequence_set))
 
         # Generate full securated password :
-        values_dict = {
-                        1:self.password_letter_chars, 
-                        2:self.password_number_chars, 
-                        3:self.password_special_chars
-                        }
 
-        for idx in self.final_number_sequence :
-            for key, character_type in values_dict.items() :
-                if idx == key : 
-                    pick_char = random.choice(character_type if character_type else "")
-                    self.password += pick_char
+        values_dict = {}
+
+        for idx,value in enumerate(self.password_category_list) : 
+            idx += 1
+            values_dict[idx] = value
+
+        if self.chars_type_available_length > 1 : 
+            for idx in self.final_number_sequence :
+                for key, character_type in values_dict.items() :
+                    if idx == key : 
+                        pick_char = random.choice(character_type if character_type else "")
+                        self.password += pick_char
+        else : 
+            for idx in self.final_number_sequence :
+                pick_char = random.choice(self.all_chars)
+                self.password += pick_char
 
         # Generate cuts securated password :
         if self.include_cuts : 

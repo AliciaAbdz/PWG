@@ -156,7 +156,8 @@ class myWindow(QMainWindow) :
 
         return line_edit,line_edit_layout
 
-    def create_push_button(self, title = None, icon = None) : 
+    def create_push_button(self, title = None, icon = None, 
+                           min_height = 40, max_width = 1000) : 
         """
         Desc : 
 
@@ -165,8 +166,12 @@ class myWindow(QMainWindow) :
         Return : 
         
         """
+        push_button = QPushButton(title,icon=(QIcon(icon)))
+        push_button.setMinimumHeight(min_height)
+        push_button.setMaximumWidth(max_width)
+
+        return push_button
         
-        pass
 
     def create_label(self, title = "Default") : 
         """
@@ -226,6 +231,8 @@ class myWindow(QMainWindow) :
         self.exclude_chars_list = self.create_line_edit("Exclude")
         self.exclude_chars = self.exclude_chars_list[0]
         self.exclude_chars_layout = self.exclude_chars_list[1]
+
+        self.create_generate_password_layout()
 
     # Create Main Containers : Tabs :
 
@@ -310,7 +317,8 @@ class myWindow(QMainWindow) :
         
         """
         create_tab_dict = {
-                            "Create":[self.essential_groupbox,self.optionnal_groupbox],
+                            "Create":[self.essential_groupbox,self.optionnal_groupbox,
+                                      self.generate_groupbox],
                             "Saved":[]}
         self.create_tab = self.create_menu_tab(tab_dict=create_tab_dict)
         self.central_layout.addWidget(self.create_tab)
@@ -369,9 +377,16 @@ class myWindow(QMainWindow) :
             self.optionnal_groupbox = self.create_groupbox(title = "Optionnal Settings", 
                                                        layout_list = [self.optionnal_layout])
     
-    def create_generate_password_layout(self, widget_list = []):
+    def create_generate_password_layout(self):
 
-        pass
+        generate_icon = "icons/update.ico"
+        self.generate_button_layout = QVBoxLayout()
+        self.generate_button = self.create_push_button(title = "Generate Password", 
+                                                       icon = generate_icon,max_width=500)
+        self.generate_button.setMinimumWidth(250)
+        self.generate_button_layout.addWidget(self.generate_button,alignment = Qt.AlignmentFlag.AlignHCenter)
+        self.generate_groupbox = QGroupBox()
+        self.generate_groupbox.setLayout(self.generate_button_layout)
 
     def create_build_section_groupbox(self, layout_list = []):
 
