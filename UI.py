@@ -1,9 +1,10 @@
 # PEP---80-characters-80-characters-80-characters-80-characters-80-characters---
 import sys
 import main
-
+import tkinter
+import json
 from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, \
-                              QTabWidget, QLayout, QHBoxLayout, QVBoxLayout, QGroupBox, \
+                              QTabWidget, QHBoxLayout, QVBoxLayout, QGroupBox, \
                               QSlider, QCheckBox, QPushButton, QLabel, QLineEdit
                                 
 from PySide6.QtGui import Qt, QIcon
@@ -55,6 +56,7 @@ class myWindow(QMainWindow) :
 
         # Icon variables :
         self.not_available_color = "#8c8c8c"
+        self.background_image = "icons/background.jpg"
         self.save_password_button_icon = "icons/save_not_available.ico"     
         self.copy_password_button_icon = "icons/copy.ico"    
         self.password_hide_icon = "icons/eyeclosedlogo.ico"
@@ -64,14 +66,19 @@ class myWindow(QMainWindow) :
         self.password_icon = self.password_hide_icon
 
         # Window construction :
-
         self.create_central_widget()
-        self.create_all_methods_items()
-        self.create_essential_properties_layout()
-        self.create_optionnal_properties_layout()
-        self.create_generate_password_layout()
-        self.create_copy_save_buttons_layout()
-        self.create_main_layout()
+
+        self.create_section_all_methods_items()
+        self.create_section_essential_properties_layout()
+        self.create_section_optionnal_properties_layout()
+        self.create_section_generate_password_layout()
+        self.create_section_copy_save_buttons_layout()
+        
+        # SAVED SECTION CONSTRUCTION &&
+        self.saved_all_methods_items()
+        self.saved_saved_password_layout()
+
+        self.tabs_main_layout()
 
     def create_central_widget(self) : 
         """
@@ -87,6 +94,30 @@ class myWindow(QMainWindow) :
         self.setCentralWidget(central_widget)
         self.central_layout = QHBoxLayout(central_widget)
         self.setMinimumSize(460,400)
+
+    def tabs_main_layout(self) : 
+        """
+        Desc : 
+            Créer un GroupBox contenant un ou plusieurs layout(s).
+        Args : 
+            title (str) : Le titre du GroupBox.
+
+            layout_list (lst) : Une liste contenant les layouts à ajouter dans 
+                                le GroupBox.
+        Return : 
+            Un objet "groupbox" de type GroupBox.
+        
+        """
+        all_tabs_dict = {
+                            "Create":[self.essential_groupbox,
+                                      self.optionnal_groupbox,
+                                      self.generate_password_groupbox,
+                                      self.validate_buttons_groupbox
+                                      ],
+                            "Saved":[self.saved_password_groupbox # SAVED SECTION CONSTRUCTION &&
+                                    ]}
+        self.all_tabs = self.create_menu_tab(tab_dict=all_tabs_dict)
+        self.central_layout.addWidget(self.all_tabs)
 
     # Widgets in Layouts : Definitions :
     
@@ -201,7 +232,7 @@ class myWindow(QMainWindow) :
     
     # Create Widgets Application :
 
-    def create_all_methods_items(self) : 
+    def create_section_all_methods_items(self) : 
         """
         Desc : 
             Lance toutes les fonctions de créations de widgets et layouts et 
@@ -262,7 +293,9 @@ class myWindow(QMainWindow) :
 
     # Create Main Containers : Tabs :
 
-    def create_menu_tab(self, tab_dict = {"Default_Title" : []}, direction = "V") : 
+    def create_menu_tab(self, 
+                        tab_dict = {"Default_Title" : []}, 
+                        direction = "V") : 
         """
         Desc : 
             Créer des onglets à partir d'un dictionnaire contenant les informations
@@ -329,35 +362,12 @@ class myWindow(QMainWindow) :
 
         return groupbox
     
-    def create_main_layout(self) : 
-        """
-        Desc : 
-            Créer un GroupBox contenant un ou plusieurs layout(s).
-        Args : 
-            title (str) : Le titre du GroupBox.
-
-            layout_list (lst) : Une liste contenant les layouts à ajouter dans 
-                                le GroupBox.
-        Return : 
-            Un objet "groupbox" de type GroupBox.
-        
-        """
-        create_tab_dict = {
-                            "Create":[self.essential_groupbox,
-                                      self.optionnal_groupbox,
-                                      self.generate_password_groupbox,
-                                      self.validate_buttons_groupbox
-                                      ],
-                            "Saved":[]}
-        self.create_tab = self.create_menu_tab(tab_dict=create_tab_dict)
-        self.central_layout.addWidget(self.create_tab)
-
-    def create_essential_properties_layout(self):
+    def create_section_essential_properties_layout(self):
         """
         Desc : 
             Crée la section de parametre essentiels pour le programme.
             Crée un GroupBox contenant un ou plusieurs layout(s). 
-            En vue d'être ajouté plus tard à une tab dans la fonction create_main_layout()
+            En vue d'être ajouté plus tard à une tab dans la fonction tabs_main_layout()
         Args : 
             title (str) : Le titre du GroupBox.
 
@@ -379,12 +389,12 @@ class myWindow(QMainWindow) :
         self.essential_groupbox = self.create_groupbox(title = "Essential Settings", 
                                                        layout_list = [self.essential_layout])
 
-    def create_optionnal_properties_layout(self):
+    def create_section_optionnal_properties_layout(self):
         """
         Desc : 
             Crée la section de parametre optionnels pour le programme.
             Crée un GroupBox contenant un ou plusieurs layout(s). 
-            En vue d'être ajouté plus tard à une tab dans la fonction create_main_layout()
+            En vue d'être ajouté plus tard à une tab dans la fonction tabs_main_layout()
         Args : 
             title (str) : Le titre du GroupBox.
 
@@ -421,7 +431,7 @@ class myWindow(QMainWindow) :
         self.password_display.hide()
         self.view_password.clicked.connect(self.show_hide_password)
 
-    def create_generate_password_layout(self):
+    def create_section_generate_password_layout(self):
         """
         Desc : 
             Crée la section de génération de mot de passe à partir des boutons existants.
@@ -468,7 +478,7 @@ class myWindow(QMainWindow) :
         self.generate_password_groupbox = self.create_groupbox(title = "Generate Password", 
                                                        layout_list = [self.generate_password_layout])
 
-    def create_copy_save_buttons_layout(self):
+    def create_section_copy_save_buttons_layout(self):
         """
         Desc : 
             Crée la section de copy et save à partir des boutons existants et le layout 
@@ -623,9 +633,73 @@ class myWindow(QMainWindow) :
 
     @Slot()
     def copy_password(self) : 
+        """
+        Desc : 
+            Méthode d'évènement : 
+            Permet de copier le mot de passe généré dans le presse-papier à 
+            l'aide de tkinter. D'
+        Args : 
+            None.
+        Return : 
+            None.
+        """
         self.password_output = self.password_line_edit.text()
-        print(">>>>",self.password_output)
-        # CONTINUE HERE
+
+        if self.password_output != "" : 
+            print("Password generated is : ",self.password_output)
+            copy_to_clipboard = tkinter.Tk() # Create Tk object
+            copy_to_clipboard.withdraw() # To disable window generated by Tk
+            copy_to_clipboard.clipboard_clear()
+            copy_to_clipboard.clipboard_append(self.password_output)
+            copy_to_clipboard.update() # Value stays in the clipboard after window 
+                                    # is closed
+            copy_to_clipboard.destroy() 
+
+    class CreateSection() :
+        
+        def __init__(self) : 
+            pass
+
+    class SavedSection() :
+        
+        def __init__(self) : 
+            pass
+
+        # SAVED SECTION CONSTRUCTION &&
+
+    def get_saved_password(self,password_file_url = "password_data/password_data.json") : 
+        password_file = open(password_file_url)
+        password_data = json.load(password_file)
+        return password_data
+
+    def saved_password_line_edit(self,password="DefaultPassword") : 
+        saved_password = QLineEdit(password)
+        saved_password.setEchoMode(QLineEdit.Password)
+        return saved_password
+
+    def saved_password_sub_layout(self):
+        self.saved_password_sub_layout = QHBoxLayout()
+        self.saved_password_sub_layout.addWidget(self.saved_password)
+
+    def saved_all_methods_items(self) : 
+        password_list = self.get_saved_password()
+        self.password_line_edit_list = []
+        for password,reference in password_list.items():
+            passw = self.saved_password_line_edit(password = password)
+            self.password_line_edit_list.append(passw)
+            view_password = self.create_push_button(title = "", icon = self.password_icon)
+
+    def saved_saved_password_layout(self):
+        self.saved_saved_password_layout = QVBoxLayout()
+        for passw in self.password_line_edit_list : 
+            self.saved_saved_password_layout.addWidget(passw)
+        self.saved_password_groupbox = self.create_groupbox(
+            title = "Saved Passwords", 
+            layout_list = [self.saved_saved_password_layout])
+        self.saved_password_groupbox.setMaximumHeight(150)
+        self.saved_password_groupbox.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        # SAVED SECTION CONSTRUCTION &&
 
 if __name__ == "__main__" : 
     app = QApplication(sys.argv)
@@ -634,3 +708,6 @@ if __name__ == "__main__" :
     main_window = myWindow(main_title,main_icon)
     main_window.show()
     sys.exit(app.exec())
+
+    # SAVED SECTION CONSTRUCTION &&
+    # RENAME ALL "CREATE" FUNCTION WITH "CREATE_SECTION"
