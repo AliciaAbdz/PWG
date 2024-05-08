@@ -7,14 +7,14 @@ import warnings
 class Password: 
 
     def __init__(self, 
-                 length = 4, 
-                 include_letters = True, 
-                 include_numbers = True, 
-                 include_special_chars = True, 
-                 include_mixed_case = True, 
-                 include_cuts = False, 
-                 exclude_chars = "", 
-                 include_chars = "" 
+                 length, 
+                 include_letters, 
+                 include_numbers, 
+                 include_special_chars, 
+                 include_mixed_case, 
+                 include_cuts, 
+                 exclude_chars, 
+                 include_chars 
                  ) :
         
         self.length = length
@@ -252,7 +252,10 @@ class Password:
 
         for char in self.exclude_chars : 
             self.password_chars_library = self.password_chars_library.replace(char, "")
-
+            if self.include_mixed_case : 
+                upper_char = char.upper()
+                self.password_chars_library = self.password_chars_library.replace(upper_char, "")
+                
         self.password_chars_library = list(self.password_chars_library)
         self.__separate_chars_category()
 
@@ -275,15 +278,15 @@ class Password:
         caractéristiques. """
 
         self.password_letter_chars = [
-                                    char for char in self.all_chars if 
+                                    char for char in self.password_chars_library if 
                                     char in string.ascii_letters
                                     ]
         self.password_number_chars = [
-                                    char for char in self.all_chars if 
+                                    char for char in self.password_chars_library if 
                                     char in string.digits
                                     ] 
         self.password_special_chars = [
-                                    char for char in self.all_chars if 
+                                    char for char in self.password_chars_library if 
                                     char in string.punctuation
                                     ]
         
@@ -305,6 +308,7 @@ class Password:
         self.chars_type_available_length = len(self.chars_type_available)
 
     def __apply_cuts(self, password, separator="-") : 
+
         """ 
         Permet à partir d'un mot de passe déjà créé de générer un autre mot de passe mais
         séquencé et coupé par un séparateur unique.
@@ -334,25 +338,26 @@ class Password:
                 max_cut_percentage = int(self.length/2)
                 random_cut_percentage = random.randint(min_cut_percentage, 
                                                             max_cut_percentage)
+
+            idx_replace_position_list = list(range(self.length))
+            idx_replace_position_list = idx_replace_position_list[0::random_cut_percentage] 
+                                        # pour prendre en compte le premier caractère.
+            idx_replace_position_list.remove(0) # pour ne pas modifier le premier caractère
+
+            for idx, value in enumerate(password_list) : 
+                if idx in idx_replace_position_list : 
+                    password_list[idx-1] = separator
+
+            password = ""
+
+            for char in password_list : 
+                password+=char
+            
+            return password
+        
         else : 
             warnings.warn("Cuts ignored, only available with minimum lenght of 8 characters", 
                           stacklevel=2)
-
-        idx_replace_position_list = list(range(self.length))
-        idx_replace_position_list = idx_replace_position_list[0::random_cut_percentage] 
-                                    # pour prendre en compte le premier caractère.
-        idx_replace_position_list.remove(0) # pour ne pas modifier le premier caractère
-
-        for idx, value in enumerate(password_list) : 
-            if idx in idx_replace_position_list : 
-                password_list[idx-1] = separator
-
-        password = ""
-
-        for char in password_list : 
-            password+=char
-        
-        return password
 
     def generate(self) : 
 
@@ -398,7 +403,10 @@ class Password:
                 final_number_sequence_set = list(set(final_number_sequence_set))
 
         # Generate full securated password :
-
+        self.available_chars = ""
+        for cat in self.password_category_list : 
+            for char in cat : 
+                self.available_chars += char
         values_dict = {}
 
         for idx,value in enumerate(self.password_category_list) : 
@@ -413,14 +421,16 @@ class Password:
                         self.password += pick_char
         else : 
             for idx in self.final_number_sequence :
-                pick_char = random.choice(self.all_chars)
+                pick_char = random.choice(self.available_chars)
                 self.password += pick_char
 
         # Generate cuts securated password :
         if self.include_cuts : 
             self.password = self.__apply_cuts(password = self.password)
 
-        print("Generated password is :", self.password)
+        # print("Generated password is :", self.password)
+
+        return self.password
 
 if __name__ == "__main__" : 
 

@@ -1,12 +1,13 @@
 # PEP---80-characters-80-characters-80-characters-80-characters-80-characters---
 import sys
+import main
+
 from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, \
                               QTabWidget, QLayout, QHBoxLayout, QVBoxLayout, QGroupBox, \
                               QSlider, QCheckBox, QPushButton, QLabel, QLineEdit
                                 
 from PySide6.QtGui import Qt, QIcon
 from PySide6.QtCore import Slot
-
 
 class PasswordDisplay: 
     """
@@ -31,7 +32,6 @@ class PasswordDisplay:
     def show(self) : 
         self.qline_edit.setEchoMode(QLineEdit.Normal)
 
-
 class myWindow(QMainWindow) : 
 
     def __init__(self, title, icon_path) :
@@ -53,12 +53,24 @@ class myWindow(QMainWindow) :
         self.setWindowTitle(self.main_title)
         self.setWindowIcon(QIcon(self.main_icon))
 
+        # Icon variables :
+        self.not_available_color = "#8c8c8c"
+        self.save_password_button_icon = "icons/save_not_available.ico"     
+        self.copy_password_button_icon = "icons/copy.ico"    
+        self.password_hide_icon = "icons/eyeclosedlogo.ico"
+        self.password_show_icon = "icons/eyeopenlogo.ico"
+        self.generate_password_button_icon = "icons/update.ico"
+        self.password_line_edit_icon = "icons/lock.ico"
+        self.password_icon = self.password_hide_icon
+
         # Window construction :
 
         self.create_central_widget()
-        self.create_all_items()
+        self.create_all_methods_items()
         self.create_essential_properties_layout()
         self.create_optionnal_properties_layout()
+        self.create_generate_password_layout()
+        self.create_copy_save_buttons_layout()
         self.create_main_layout()
 
     def create_central_widget(self) : 
@@ -74,7 +86,7 @@ class myWindow(QMainWindow) :
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         self.central_layout = QHBoxLayout(central_widget)
-        self.setMinimumSize(460,250)
+        self.setMinimumSize(460,400)
 
     # Widgets in Layouts : Definitions :
     
@@ -154,6 +166,9 @@ class myWindow(QMainWindow) :
         line_edit_layout.addWidget(label)
         line_edit_layout.addWidget(line_edit)
 
+        if read_only == True : 
+            line_edit.setReadOnly()
+
         return line_edit,line_edit_layout
 
     def create_push_button(self, title = None, icon = None, 
@@ -172,7 +187,6 @@ class myWindow(QMainWindow) :
 
         return push_button
         
-
     def create_label(self, title = "Default") : 
         """
         Desc : 
@@ -187,7 +201,7 @@ class myWindow(QMainWindow) :
     
     # Create Widgets Application :
 
-    def create_all_items(self) : 
+    def create_all_methods_items(self) : 
         """
         Desc : 
             Lance toutes les fonctions de créations de widgets et layouts et 
@@ -201,10 +215,12 @@ class myWindow(QMainWindow) :
         self.letters_check_box = self.letters_check_box_list[0]
         self.letters_check_box_layout = self.letters_check_box_list[1]
         self.check_box_clicked()
+        self.letters_check_box.setChecked(True)
 
         self.numbers_check_box_list = self.create_check_box("Numbers")
         self.numbers_check_box = self.numbers_check_box_list[0]
         self.numbers_check_box_layout = self.numbers_check_box_list[1]
+        self.numbers_check_box.setChecked(True)
 
         self.specials_check_box_list = self.create_check_box("Specials")
         self.specials_check_box = self.specials_check_box_list[0]
@@ -213,12 +229,12 @@ class myWindow(QMainWindow) :
         self.mixed_case_check_box_list = self.create_check_box("Mixed Case (Need Letters)")
         self.mixed_case_check_box = self.mixed_case_check_box_list[0]
         self.mixed_case_check_box_layout = self.mixed_case_check_box_list[1]
-        self.mixed_case_check_box.setCheckable(False)
-        self.mixed_case_check_box.setStyleSheet("color:#bcbcbc")
+        self.mixed_case_check_box.setChecked(True)
 
         self.cuts_check_box_list = self.create_check_box("Cuts")
         self.cuts_check_box= self.cuts_check_box_list[0]
         self.cuts_check_box_layout = self.cuts_check_box_list[1]
+        self.cuts_check_box.setChecked(True)
 
         self.lenght_slider_list = self.create_lenght_slider("Length")
         self.lenght_slider = self.lenght_slider_list[0]
@@ -232,7 +248,17 @@ class myWindow(QMainWindow) :
         self.exclude_chars = self.exclude_chars_list[0]
         self.exclude_chars_layout = self.exclude_chars_list[1]
 
-        self.create_generate_password_layout()
+        self.generate_password_button = self.create_push_button(title = "Generate Password", 
+                                                       icon = self.generate_password_button_icon,max_width=500)
+        
+        self.view_password = self.create_push_button(title = "", icon = self.password_icon)
+
+        self.copy_password_button = self.create_push_button(title = "Copy", 
+                                                            icon = self.copy_password_button_icon)    
+
+        self.save_password_button = self.create_push_button(title = "Save", 
+                                                            icon = self.save_password_button_icon)
+        self.save_password_button.setStyleSheet(f"color:{self.not_available_color}")
 
     # Create Main Containers : Tabs :
 
@@ -317,8 +343,11 @@ class myWindow(QMainWindow) :
         
         """
         create_tab_dict = {
-                            "Create":[self.essential_groupbox,self.optionnal_groupbox,
-                                      self.generate_groupbox],
+                            "Create":[self.essential_groupbox,
+                                      self.optionnal_groupbox,
+                                      self.generate_password_groupbox,
+                                      self.validate_buttons_groupbox
+                                      ],
                             "Saved":[]}
         self.create_tab = self.create_menu_tab(tab_dict=create_tab_dict)
         self.central_layout.addWidget(self.create_tab)
@@ -376,27 +405,136 @@ class myWindow(QMainWindow) :
             self.optionnal_layout.addLayout(optionnal_sub_layout)
             self.optionnal_groupbox = self.create_groupbox(title = "Optionnal Settings", 
                                                        layout_list = [self.optionnal_layout])
-    
+
+    def password_display_action(self) : 
+        """
+        Desc : 
+            Crée un mot de passe à partir de la classe Password importée du module 
+            principal "main".
+            Set ensuite le mot de passe dans le line edit adéquat.
+        Args : 
+            None.
+        Return : 
+            None.
+        """
+        self.password_display = PasswordDisplay(self.password_line_edit)
+        self.password_display.hide()
+        self.view_password.clicked.connect(self.show_hide_password)
+
     def create_generate_password_layout(self):
-
-        generate_icon = "icons/update.ico"
-        self.generate_button_layout = QVBoxLayout()
-        self.generate_button = self.create_push_button(title = "Generate Password", 
-                                                       icon = generate_icon,max_width=500)
-        self.generate_button.setMinimumWidth(250)
-        self.generate_button_layout.addWidget(self.generate_button,alignment = Qt.AlignmentFlag.AlignHCenter)
-        self.generate_groupbox = QGroupBox()
-        self.generate_groupbox.setLayout(self.generate_button_layout)
-
-    def create_build_section_groupbox(self, layout_list = []):
-
-        pass
-
-    def create_copy_save_buttons_layout(self, widget_list = []):
+        """
+        Desc : 
+            Crée la section de génération de mot de passe à partir des boutons existants.
+            Crée un bouton "Generate", un qline edit contenant le mot de passe généré,
+            un bouton qui permet de hide/show le mot de passe, un label qui indique à 
+            l'utilisateur si le mot de passe fort ou faible. 
+            Ces layouts et widgets sont contenus dans un groupbox.
+            
+        Args : 
+            None.
+        Return : 
+            None.
         
-        pass
+        """
+        # Edit du bouton generate et création de son layout : 
 
-    # Actions / Event / Connection Widgets :
+        self.generate_button_clicked()
+        self.generate_password_button.setMinimumWidth(250)
+        self.generate_password_layout = QVBoxLayout()
+        self.generate_password_layout.addWidget(self.generate_password_button,alignment = Qt.AlignmentFlag.AlignHCenter)
+
+        # Création du line edit contenant le mot de passe (sans passer par la méthode
+        # disponible car pas besoin de label associé au line_edit)
+
+        self.password_line_edit = QLineEdit()
+        self.password_line_edit.setMinimumHeight(40)
+        self.password_line_edit.setClearButtonEnabled(True)
+        self.password_line_edit.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        # Edit du bouton show/view qui permettra de voir ou non le mot de passe :
+        # Définition de l'action du bouton : 
+        
+        self.view_password.setMinimumWidth(40)
+        self.password_display_action()
+
+        # Création du layout qui accueillera le line edit mais aussi le bouton view/show
+        # ainsi que du groupbox qui accueillera le layout.
+
+        self.password_line_edit_layout = QHBoxLayout()
+        self.password_line_edit_layout.addWidget(self.password_line_edit)
+        self.generate_password_layout.addLayout(self.password_line_edit_layout)
+        self.password_line_edit_layout.addWidget(self.view_password)
+
+        self.generate_password_groupbox = self.create_groupbox(title = "Generate Password", 
+                                                       layout_list = [self.generate_password_layout])
+
+    def create_copy_save_buttons_layout(self):
+        """
+        Desc : 
+            Crée la section de copy et save à partir des boutons existants et le layout 
+            auquel ces derniers sont associés.
+            Ce layout est contenu dans un groupbox.
+            
+        Args : 
+            None.
+        Return : 
+            None.
+        
+        """
+        # Edit des boutons copy et save et création de leur layout et groupbox: 
+
+        self.copy_password_button.setMinimumWidth(150)
+        self.copy_button_clicked()
+        self.save_password_button.setMinimumWidth(150)
+
+        self.validate_buttons_layout = QHBoxLayout()
+        self.validate_buttons_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.validate_buttons_layout.addWidget(self.copy_password_button)
+        self.validate_buttons_layout.addWidget(self.save_password_button)
+
+        self.validate_buttons_groupbox = self.create_groupbox(title = "", 
+                                                              layout_list = [self.validate_buttons_layout])
+
+    # Signals / Actions / Connection Widgets :
+
+    def check_box_clicked(self):
+        """
+        Desc : 
+            Méthode de connexion : 
+            Connecte la méthode d'évenement "make_box_available" au click de 
+            la CheckBox "Letters".
+        Args : 
+            None.
+        Return : 
+            None.
+        """
+        self.letters_check_box.clicked.connect(self.make_box_available)
+
+    def generate_button_clicked(self):
+        """
+        Desc : 
+            Méthode de connexion : 
+            Connecte la méthode d'évenement "create_password" au click du 
+            bouton "Generate".
+        Args : 
+            None.
+        Return : 
+            None.
+        """
+        self.generate_password_button.clicked.connect(self.create_password)
+
+    def copy_button_clicked(self):
+        """
+        Desc : 
+            Méthode de connexion : 
+            Connecte la méthode d'évenement "copy_password" au click du 
+            bouton "Copy".
+        Args : 
+            None.
+        Return : 
+            None.
+        """
+        self.copy_password_button.clicked.connect(self.copy_password)
 
     @Slot()
     def slider_value_changed(self,value) : 
@@ -414,20 +552,6 @@ class myWindow(QMainWindow) :
         self.slider_value = value
         self.connected_label.setText(str(value))
 
-    def check_box_clicked(self):
-        """
-        Desc : 
-            Méthode de connexion : 
-            Connecte la méthode d'évenement "make_box_available" au click de 
-            la CheckBox "Letters".
-        Args : 
-            None.
-        Return : 
-            None.
-        
-        """
-        self.letters_check_box.clicked.connect(self.make_box_available)
-    
     @Slot()
     def make_box_available(self,value):
         """
@@ -440,15 +564,68 @@ class myWindow(QMainWindow) :
             value (bool) : La valeur retournée par la box.
         Return : 
             None.
-        
         """
         if value == False : 
             self.mixed_case_check_box.setCheckable(False)
-            self.mixed_case_check_box.setStyleSheet("color:#bcbcbc")
+            self.mixed_case_check_box.setStyleSheet(f"color:{self.not_available_color}")
 
         else : 
             self.mixed_case_check_box.setCheckable(True)
             self.mixed_case_check_box.setStyleSheet("color:#000000")
+
+    @Slot()
+    def show_hide_password(self) : 
+        """
+        Desc : 
+            Méthode d'évènement : 
+            Set la visibilité du mot de passe en fonction du click du bouton.
+            Query le statut du qline edit
+        Args : 
+            None.
+        Return : 
+            None.
+        """
+        password_display_current_state = str(self.password_line_edit.echoMode())
+        if password_display_current_state == "EchoMode.Password" : 
+            self.password_display.show()
+            self.password_icon = self.password_show_icon
+        else : 
+            self.password_display.hide()
+            self.password_icon = self.password_hide_icon
+
+        self.view_password.setIcon(QIcon(self.password_icon))
+
+    @Slot()
+    def create_password(self) : 
+        """
+        Desc : 
+            Méthode d'évènement : 
+            Crée un mot de passe à partir de la classe Password.
+            Set ensuite le mot de passe dans le line edit adéquat.
+        Args : 
+            None.
+        Return : 
+            None.
+        """
+
+        self.password = main.Password(length = self.lenght_slider.value(),
+                                      include_letters = self.letters_check_box.isChecked(),
+                                      include_numbers = self.numbers_check_box.isChecked(),
+                                      include_special_chars = self.specials_check_box.isChecked(),
+                                      include_mixed_case = self.mixed_case_check_box.isChecked(),
+                                      include_cuts = self.cuts_check_box.isChecked(),
+                                      include_chars = self.include_chars.text(),
+                                      exclude_chars = self.exclude_chars.text()
+                                      )
+        
+        self.password = self.password.generate()
+        self.password_line_edit.setText(self.password)
+
+    @Slot()
+    def copy_password(self) : 
+        self.password_output = self.password_line_edit.text()
+        print(">>>>",self.password_output)
+        # CONTINUE HERE
 
 if __name__ == "__main__" : 
     app = QApplication(sys.argv)
