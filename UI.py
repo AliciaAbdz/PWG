@@ -5,7 +5,8 @@ import tkinter
 import json
 from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, \
                               QTabWidget, QHBoxLayout, QVBoxLayout, QGroupBox, \
-                              QSlider, QCheckBox, QPushButton, QLabel, QLineEdit
+                              QSlider, QCheckBox, QPushButton, QLabel, QLineEdit, \
+                              QListWidgetItem
                                 
 from PySide6.QtGui import Qt, QIcon
 from PySide6.QtCore import Slot
@@ -56,14 +57,17 @@ class myWindow(QMainWindow) :
 
         # Icon variables :
         self.not_available_color = "#8c8c8c"
-        self.background_image = "icons/background.jpg"
         self.save_password_button_icon = "icons/save_not_available.ico"     
         self.copy_password_button_icon = "icons/copy.ico"    
         self.password_hide_icon = "icons/eyeclosedlogo.ico"
         self.password_show_icon = "icons/eyeopenlogo.ico"
         self.generate_password_button_icon = "icons/update.ico"
         self.password_line_edit_icon = "icons/lock.ico"
+        self.modify_password_button_icon = "icons/modify.ico"
         self.password_icon = self.password_hide_icon
+
+        # Data variables : 
+        self.user_data_file = "password_data/password_data.json"
 
         # Window construction :
         self.create_central_widget()
@@ -75,8 +79,8 @@ class myWindow(QMainWindow) :
         self.create_section_copy_save_buttons_layout()
         
         # SAVED SECTION CONSTRUCTION &&
-        self.saved_all_methods_items()
-        self.saved_saved_password_layout()
+
+        self.saved_section_password_layout()
 
         self.tabs_main_layout()
 
@@ -109,11 +113,11 @@ class myWindow(QMainWindow) :
         
         """
         all_tabs_dict = {
-                            "Create":[self.essential_groupbox,
-                                      self.optionnal_groupbox,
-                                      self.generate_password_groupbox,
-                                      self.validate_buttons_groupbox
-                                      ],
+                            "Generate":[self.essential_groupbox,
+                                        self.optionnal_groupbox,
+                                        self.generate_password_groupbox,
+                                        self.validate_buttons_groupbox
+                                        ],
                             "Saved":[self.saved_password_groupbox # SAVED SECTION CONSTRUCTION &&
                                     ]}
         self.all_tabs = self.create_menu_tab(tab_dict=all_tabs_dict)
@@ -203,7 +207,8 @@ class myWindow(QMainWindow) :
         return line_edit,line_edit_layout
 
     def create_push_button(self, title = None, icon = None, 
-                           min_height = 40, max_width = 1000) : 
+                           min_width = 40, max_width = 1000,
+                           min_height = 40, max_height = 1000) : 
         """
         Desc : 
 
@@ -214,6 +219,9 @@ class myWindow(QMainWindow) :
         """
         push_button = QPushButton(title,icon=(QIcon(icon)))
         push_button.setMinimumHeight(min_height)
+        push_button.setMaximumHeight(max_height)
+
+        push_button.setMinimumWidth(min_width)
         push_button.setMaximumWidth(max_width)
 
         return push_button
@@ -289,7 +297,7 @@ class myWindow(QMainWindow) :
 
         self.save_password_button = self.create_push_button(title = "Save", 
                                                             icon = self.save_password_button_icon)
-        self.save_password_button.setStyleSheet(f"color:{self.not_available_color}")
+        # self.save_password_button.setStyleSheet(f"color:{self.not_available_color}")
 
     # Create Main Containers : Tabs :
 
@@ -468,12 +476,14 @@ class myWindow(QMainWindow) :
         self.password_display_action()
 
         # Création du layout qui accueillera le line edit mais aussi le bouton view/show
-        # ainsi que du groupbox qui accueillera le layout.
+        # Ajout du layout line edit au layout principal de generate password et création 
+        # du groupbox qui accueillera ce dernier.
 
         self.password_line_edit_layout = QHBoxLayout()
         self.password_line_edit_layout.addWidget(self.password_line_edit)
-        self.generate_password_layout.addLayout(self.password_line_edit_layout)
         self.password_line_edit_layout.addWidget(self.view_password)
+
+        self.generate_password_layout.addLayout(self.password_line_edit_layout)
 
         self.generate_password_groupbox = self.create_groupbox(title = "Generate Password", 
                                                        layout_list = [self.generate_password_layout])
@@ -496,6 +506,7 @@ class myWindow(QMainWindow) :
         self.copy_password_button.setMinimumWidth(150)
         self.copy_button_clicked()
         self.save_password_button.setMinimumWidth(150)
+        self.save_button_clicked()
 
         self.validate_buttons_layout = QHBoxLayout()
         self.validate_buttons_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -545,6 +556,21 @@ class myWindow(QMainWindow) :
             None.
         """
         self.copy_password_button.clicked.connect(self.copy_password)
+
+    def save_button_clicked(self) : 
+
+        self.save_password_button.clicked.connect(self.save_password)
+
+    def add_password_to_json_file(self) : 
+        
+        self.new_reference_to_save_text = self.new_reference_to_save.text()
+        self.new_password_to_save_text = self.new_password_to_save.text()
+
+        self.data_base[self.new_reference_to_save_text] = self.new_password_to_save_text
+        print(self.data_base)
+        json_dict = json.dumps(self.data_base,indent = 4)
+        with open(self.user_data_file, "w") as outfile:
+            outfile.write(json_dict)
 
     @Slot()
     def slider_value_changed(self,value) : 
@@ -630,6 +656,7 @@ class myWindow(QMainWindow) :
         
         self.password = self.password.generate()
         self.password_line_edit.setText(self.password)
+        self.password_output = self.password_line_edit.text()
 
     @Slot()
     def copy_password(self) : 
@@ -655,6 +682,24 @@ class myWindow(QMainWindow) :
                                     # is closed
             copy_to_clipboard.destroy() 
 
+    @Slot()
+    def save_password(self):
+
+        self.password_output = self.password_line_edit.text()
+
+        if self.password_output : 
+            new_row =self.create_existing_passwords_row_layout(reference = "Random1",
+                                                    password = self.password_output)
+            self.new_password_to_save = new_row[0]
+            self.new_reference_to_save = new_row[1]
+            layout = new_row[2]
+            self.saved_section_password_layout.addLayout(layout)
+            self.add_password_to_json_file()
+            last_id = int(list(self.data_array_dict.keys())[-1])
+            self.data_array_dict[last_id+1] = new_row[0]
+            self.data_array_dict[last_id+2] = new_row[1]
+
+
     class CreateSection() :
         
         def __init__(self) : 
@@ -667,39 +712,173 @@ class myWindow(QMainWindow) :
 
         # SAVED SECTION CONSTRUCTION &&
 
-    def get_saved_password(self,password_file_url = "password_data/password_data.json") : 
+    def get_password_dict_from_json(self,
+                                    password_file_url,
+                                    ): 
+        """
+        Desc : 
+            Permet de récupérer les mots de passe présents dans le fichier
+            json.
+        Args : 
+            password_file_url (str) : url du fichier .json contenant les 
+                                      données.
+        Return : 
+            Un dictionnaire avec comme clé la référence et comme valeur
+            le mot de passe associé.
+        """
         password_file = open(password_file_url)
         password_data = json.load(password_file)
         return password_data
 
-    def saved_password_line_edit(self,password="DefaultPassword") : 
-        saved_password = QLineEdit(password)
-        saved_password.setEchoMode(QLineEdit.Password)
-        return saved_password
+    def save_password_dict_to_json(self,
+                                   password_file_url,
+                                   ): 
+        self.data_base = {}
+        for id,data in self.data_array_dict.items() : 
+            if id%2 != 0 : 
+                self.data_base[self.data_array_dict[id+1].text()] = data.text()
+        json_dict = json.dumps(self.data_base,indent = 4)
+        with open(password_file_url, "w") as outfile:
+            outfile.write(json_dict)
 
-    def saved_password_sub_layout(self):
-        self.saved_password_sub_layout = QHBoxLayout()
-        self.saved_password_sub_layout.addWidget(self.saved_password)
+    def create_saved_content_line_edit(self,
+                                       content = "DefaultPassword",
+                                       hidden = True, 
+                                       read_only = True) : 
+        """
+        Desc : 
+            Crée un QLine Edit avec un conten
+        Args : 
+            password_file_url (str) : url du fichier .json contenant les données.
+            hidden (bool) : set if password is hidden by default or not.
+            read_only (bool) : set Qline Edit read only.
 
-    def saved_all_methods_items(self) : 
-        password_list = self.get_saved_password()
-        self.password_line_edit_list = []
-        for password,reference in password_list.items():
-            passw = self.saved_password_line_edit(password = password)
-            self.password_line_edit_list.append(passw)
-            view_password = self.create_push_button(title = "", icon = self.password_icon)
+        Return : 
+            Un dictionnaire avec comme clé la référence et comme valeur
+            le mot de passe associé.
+        """
+        content = str(content)
+        saved_content = QLineEdit(content)
+        saved_content.setMaximumHeight(self.max_height)
+        if hidden :
+            saved_content.setEchoMode(QLineEdit.Password)
+        if read_only :
+            saved_content.setReadOnly(True)
+        return saved_content
 
-    def saved_saved_password_layout(self):
-        self.saved_saved_password_layout = QVBoxLayout()
-        for passw in self.password_line_edit_list : 
-            self.saved_saved_password_layout.addWidget(passw)
+    def create_modify_password_button(self):
+        modify_button = self.create_push_button(title = "Edit", 
+                                                icon = self.modify_password_button_icon,
+                                                max_height = self.max_height)
+        return modify_button
+    
+    def save_changes_section(self,layout) : 
+        for widget_index in range(layout.count()) :
+            widget = layout.itemAt(widget_index).widget()
+            if isinstance(widget,QLineEdit):
+                widget.setReadOnly(True)
+                for id, data in self.data_array_dict.items() : 
+                    if widget == data : 
+                        if id%2 != 0 :
+                            widget.setEchoMode(QLineEdit.Password)
+        print(self.data_array_dict)
+
+        self.save_password_dict_to_json(self.user_data_file)
+
+    def make_editable_section(self,layout) : 
+        for widget_index in range(layout.count()) :
+            widget = layout.itemAt(widget_index).widget()
+            if isinstance(widget,QLineEdit):
+                if widget.isReadOnly() : 
+                    widget.setReadOnly(False)
+                    widget.setEchoMode(QLineEdit.Normal)
+
+    def modify_action_button(self) : 
+
+        sender_button = self.sender() # Permet de savoir quel bouton a envoyé le signal
+        button_parent = sender_button.parentWidget() # Trouve le parent du bouton,
+                                                     # ici c'est un groupBox
+        if isinstance(button_parent,QGroupBox) : # Si c'est un QGroupBox, alors on va 
+                                                 # chercher le layout en dessous
+            parent_layout = button_parent.layout()
+        else : 
+            parent_layout = button_parent
+
+        current_layout = None
+        stop = False
+
+        for layout_index in range(parent_layout.count()) :
+            if stop : 
+                break
+            layout = parent_layout.itemAt(layout_index).layout()
+            for widget_index in range(layout.count()) :
+                if stop : 
+                    break
+                widget = layout.itemAt(widget_index).widget()
+                if widget == sender_button :
+                    current_layout = layout
+                    stop = True
+
+            if current_layout :
+                if sender_button.text() == "Edit" :
+                    sender_button.setText("Save")
+                    sender_button.setIcon(QIcon(self.save_password_button_icon))
+                    self.make_editable_section(current_layout)
+                elif sender_button.text() == "Save" : 
+                    sender_button.setText("Edit")
+                    sender_button.setIcon(QIcon(self.modify_password_button_icon))
+                    self.save_changes_section(current_layout)
+
+    def create_save_password_button(self):
+
+        save_button = self.create_push_button(title = "", 
+                                                icon = self.save_password_button_icon,
+                                                max_height = self.max_height)
+        return save_button
+
+    def create_existing_passwords_row_layout(self,reference,password):
+
+        password_line_edit = self.create_saved_content_line_edit(content = password)
+        reference_line_edit = self.create_saved_content_line_edit(content = reference, 
+                                                                  hidden = False)
+        button_line_edit = self.create_modify_password_button()
+        button_line_edit.clicked.connect(self.modify_action_button)
+        existing_passwords_layout = QHBoxLayout()
+        existing_passwords_layout.addWidget(password_line_edit)
+        existing_passwords_layout.addWidget(reference_line_edit)
+        existing_passwords_layout.addWidget(button_line_edit)
+
+        return password_line_edit, reference_line_edit, existing_passwords_layout
+
+    def create_saved_content(self) : 
+        self.max_height = 40
+        layout_list = []
+        self.data_base = self.get_password_dict_from_json(self.user_data_file)
+        self.data_array_dict = {}
+        id = 0
+        for reference, password in self.data_base.items() : 
+            id +=1 
+            row = self.create_existing_passwords_row_layout(reference,password)
+            self.data_array_dict[id] = row[0]
+            id +=1 
+            self.data_array_dict[id] = row[1]
+            layout = row[2]
+            layout_list.append(layout)
+        
+        return layout_list
+    
+    def saved_section_password_layout(self):
+        layout_list = self.create_saved_content()
+        self.saved_section_password_layout = QVBoxLayout()
+        for layout in layout_list : 
+            self.saved_section_password_layout.addLayout(layout)
         self.saved_password_groupbox = self.create_groupbox(
             title = "Saved Passwords", 
-            layout_list = [self.saved_saved_password_layout])
-        self.saved_password_groupbox.setMaximumHeight(150)
-        self.saved_password_groupbox.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            layout_list = [self.saved_section_password_layout])
+        self.saved_password_groupbox.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        # SAVED SECTION CONSTRUCTION &&
+        # SAVED SECTION CONSTRUCTION && REDONE BUT NOT CLEAN
+        # IT CUTTED AND THOUGHT PROPERLY 
 
 if __name__ == "__main__" : 
     app = QApplication(sys.argv)
@@ -710,4 +889,3 @@ if __name__ == "__main__" :
     sys.exit(app.exec())
 
     # SAVED SECTION CONSTRUCTION &&
-    # RENAME ALL "CREATE" FUNCTION WITH "CREATE_SECTION"
