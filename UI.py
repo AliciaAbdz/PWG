@@ -4,7 +4,7 @@ import main
 import tkinter
 import json
 from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, \
-                              QTabWidget, QLayout, QHBoxLayout, QVBoxLayout, QGroupBox, \
+                              QTabWidget, QHBoxLayout, QVBoxLayout, QGroupBox, \
                               QSlider, QCheckBox, QPushButton, QLabel, QLineEdit, \
                               QInputDialog, QMessageBox, \
                               QListWidget, QListWidgetItem
@@ -17,7 +17,7 @@ class PasswordDisplay:
     Desc : 
         Classe encapsulant des méthodes de display pour les mots de passe : 
         Show ou Hide. A placer dans une méthode d'evenements comme le process 
-        contenant les méthodes "check_box_clicked" & "make_box_available".
+        contenant les méthodes "check_box_clicked" & "set_box_available".
     Args : 
         qline_edit (QLineEdit) : Le widget QLineEdit dont on veut masquer
         ou montrer les caractères.
@@ -58,12 +58,14 @@ class myWindow(QMainWindow) :
 
         # Size variables :
         self.max_item_height = 40
-        self.min_line_edit_height = 40
+        self.generate_section_line_edit_mxh = 40
+        self.saved_section_line_edit_mxh = 30
+        self.saved_section_button_mns = 30
         self.window_min_height = 500
         self.window_min_width = 450
 
         # Icon variables :
-        self.not_available_color = "#8c8c8c"
+        self.not_available_color = "#646464"
         self.available_color = "#000000"
 
         self.warning_window_icon = "icons/warning-icon.ico"
@@ -76,7 +78,7 @@ class myWindow(QMainWindow) :
         self.generate_password_button_icon = "icons/update.ico"
         self.password_line_edit_icon = "icons/lock.ico"
         self.modify_password_button_icon = "icons/modify.ico"
-        self.delete_password_button_icon = "icons/trash.ico"
+        self.delete_password_from_list_button_icon = "icons/trash.ico"
 
         self.password_icon = self.password_hide_icon
 
@@ -113,6 +115,33 @@ class myWindow(QMainWindow) :
         error_box.setText(message)
         error_box.exec()
 
+    def create_confirm_box(self,
+                           message = "Voulez-vous confirmer?", 
+                           conf="Confirm",
+                           canc="Cancel") : 
+        """
+        Desc : 
+            Ouvre une fenêtre de confirmation contenant un message et deux
+            boutons à l'attention de l'utilisateur.
+        Args : 
+            conf (str) : Le texte du bouton de confirmation .
+            canc (str) : Le texte du bouton d'annulation .
+        Return : 
+            Une variable de type boolean sur le choix de l'utilisateur.
+        """
+        confirmed = False
+        confirm_box = QMessageBox()
+        confirm_box.setWindowTitle("Confirm Window")
+        confirm_box.setWindowIcon(QIcon(self.warning_window_icon))
+        confirm_box.addButton(conf,QMessageBox.ButtonRole.YesRole)
+        confirm_box.addButton(canc,QMessageBox.ButtonRole.NoRole)
+        confirm_box.setText(message)
+        confirm_box.exec()
+        output_user = confirm_box.clickedButton().text()
+        if output_user == conf :
+            confirmed = True
+        return confirmed
+
     def create_central_widget(self) : 
         """
         Desc : 
@@ -125,6 +154,7 @@ class myWindow(QMainWindow) :
             None.
         """
         central_widget = QWidget()
+        # central_widget.setStyleSheet("background : #fffed2")
         self.setCentralWidget(central_widget)
         self.central_layout = QHBoxLayout(central_widget)
         self.setMinimumSize(self.window_min_height,self.window_min_width)
@@ -355,9 +385,10 @@ class myWindow(QMainWindow) :
         
         """
         tab = QTabWidget() 
-
         for title,list_items in tab_dict.items() : 
             main_widget = QWidget()
+            # main_widget.setStyleSheet("background : white")
+
             tab.addTab(main_widget,title)
             if direction == "V" : 
                 main_layout = QVBoxLayout()
@@ -461,6 +492,7 @@ class myWindow(QMainWindow) :
         """
         Desc : 
             Section : Generate
+            Méthode de création et d'action : 
             Crée un mot de passe à partir de la classe Password importée du module 
             principal "main".
             Set ensuite le mot de passe dans le line edit adéquat.
@@ -477,6 +509,7 @@ class myWindow(QMainWindow) :
         """
         Desc : 
             Section : Generate
+            Méthode de création : 
             Crée la section de génération de mot de passe à partir des boutons existants.
             Crée un bouton "Generate", un qline edit contenant le mot de passe généré,
             un bouton qui permet de hide/show le mot de passe, un label qui indique à 
@@ -502,7 +535,7 @@ class myWindow(QMainWindow) :
         # en fonction du contenu du line edit
 
         self.password_line_edit = QLineEdit()
-        self.password_line_edit.setMinimumHeight(self.min_line_edit_height)
+        self.password_line_edit.setMinimumHeight(self.generate_section_line_edit_mxh)
         self.password_line_edit.setClearButtonEnabled(True)
         self.password_line_edit.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.password_line_edit.textChanged.connect(self.change_save_button_icon)
@@ -529,6 +562,7 @@ class myWindow(QMainWindow) :
         """
         Desc : 
             Section : Generate
+            Méthode de création : 
             Crée la section de copy et save à partir des boutons existants et le layout 
             auquel ces derniers sont associés.
             Ce layout est contenu dans un groupbox.
@@ -561,14 +595,14 @@ class myWindow(QMainWindow) :
         Desc : 
             Section : Generate
             Méthode de connexion : 
-            Connecte la méthode d'évenement "make_box_available" au click de 
+            Connecte la méthode d'évenement "set_box_available" au click de 
             la CheckBox "Letters".
         Args : 
             None.
         Return : 
             None.
         """
-        self.letters_check_box.clicked.connect(self.make_box_available)
+        self.letters_check_box.clicked.connect(self.set_box_available)
 
     def generate_button_clicked(self):
         """
@@ -616,7 +650,7 @@ class myWindow(QMainWindow) :
         """
         Desc : 
             Section : Generate
-            Méthode de sauvegarde : 
+            Méthode d'ajout et de sauvegarde : 
             Met à jour le dictionnaire avec les nouvelles entrées et modifie
             entièrement le password_data.json en mettant à jour le fichier.
         Args : 
@@ -651,7 +685,7 @@ class myWindow(QMainWindow) :
         self.connected_label.setText(str(value))
 
     @Slot()
-    def make_box_available(self,value):
+    def set_box_available(self,value):
         """
         Desc : 
             Section : Generate
@@ -700,7 +734,7 @@ class myWindow(QMainWindow) :
         """
         Desc : 
             Section : Generate
-            Méthode d'évènement : 
+            Méthode d'évènement et de création : 
             Crée un mot de passe à partir de la classe Password.
             Set ensuite le mot de passe dans le line edit adéquat.
         Args : 
@@ -753,7 +787,7 @@ class myWindow(QMainWindow) :
         """
         Desc : 
             Section : Generate
-            Méthode d'évènement : 
+            Méthode d'évènement et de sauvegarde : 
             Permet d'ajouter à la liste de l'interface les nouvelles entrées :
             - Mot de passe
             - Reference de mot de passe
@@ -774,6 +808,8 @@ class myWindow(QMainWindow) :
         self.password_output = self.password_line_edit.text()
 
         if self.password_output : 
+
+            # QInput Dialog to get reference input :
             reference_dialog = QInputDialog()
             reference_dialog.setWindowTitle("Reference Name")
             reference_dialog.setWindowIcon(QIcon(self.main_icon))
@@ -790,9 +826,13 @@ class myWindow(QMainWindow) :
                 layout = new_row[2]
                 self.add_to_password_list(layout,self.saved_section_password_listwidget)
                 self.add_password_to_json_file()
-                last_id = int(list(self.data_array_dict.keys())[-1])
+                if self.data_array_dict :
+                    last_id = int(list(self.data_array_dict.keys())[-1])
+                else : 
+                    last_id = 0
                 self.data_array_dict[last_id+1] = new_row[0]
                 self.data_array_dict[last_id+2] = new_row[1]
+                print(self.data_array_dict)
             else : 
                 self.create_warning_box("Saving aborted.")
 
@@ -802,6 +842,8 @@ class myWindow(QMainWindow) :
         Desc : 
             Section : Generate
             Méthode d'évènement : 
+            Utilisée dans : self.create_section_generate_password_layout()
+
             Change l'icone et la couleur des boutons "Save" et "Copy" en 
             fonction du contenu rempli ou vide du Generate QLineEdit.
         Args : 
@@ -838,6 +880,8 @@ class myWindow(QMainWindow) :
         Desc : 
             Section : Saved
             Méthode d'acquisition : 
+            Utilisée dans : self.create_saved_content()
+            
             Permet de récupérer les mots de passe présents dans le fichier
             json.
         Args : 
@@ -856,6 +900,8 @@ class myWindow(QMainWindow) :
         Desc : 
             Section : Saved
             Méthode de sauvegarde : 
+            Utilisée dans : self.save_line_edit_changes()
+
             Permet d'update le fichier json avec le nouveau dictionnaire 
             de stockage "self.data_base", recréé à partir du dictionnaire 
             de gestion "self.data_array_dict".
@@ -867,7 +913,6 @@ class myWindow(QMainWindow) :
         
         """
         self.data_base = {}
-        
         for id,data in self.data_array_dict.items() : 
             if id%2 != 0 : 
                 self.data_base[self.data_array_dict[id+1].text()] = data.text()
@@ -875,6 +920,98 @@ class myWindow(QMainWindow) :
         json_dict = json.dumps(self.data_base,indent = 4)
         with open(password_file_url, "w") as outfile:
             outfile.write(json_dict)
+
+    def remove_password_from_json_dict(self) : 
+        """
+        Desc : 
+            Section : Saved
+            Méthode de suppression et de sauvegarde : 
+            Utilisée dans : self.delete_button_clicked()
+
+            Met à jour les dictionnaires avec les nouvelles entrées et modifie
+            entièrement le password_data.json en mettant à jour le fichier.
+        Args : 
+            None.
+        Return : 
+            None.
+        """
+        if self.delete_confirm :
+            self.data_base.pop(self.reference_to_delete)
+            key_to_pop_list = []
+            for key,value in self.data_array_dict.items():
+                value = value.text()
+                if value == self.reference_to_delete \
+                or value == self.password_to_delete: 
+                    key_to_pop_list.append(key)
+
+            for key in key_to_pop_list :
+                self.data_array_dict.pop(key)
+
+            for key,value in self.data_array_dict.items() :
+                print(key, " : ", value.text())
+                
+            json_dict = json.dumps(self.data_base,indent = 4)
+            with open(self.user_data_file, "w") as outfile:
+                outfile.write(json_dict)
+
+    def add_to_password_list(self,layout_list,listwidget):
+        """
+        Desc : 
+            Section : Saved
+            Méthode d'ajout : 
+            Utilisée dans : self.create_saved_section_password_layout()
+                        
+            Permet d'ajouter à une QListWidget une liste de layout: 
+                a) Création d'un QWidget qui sert ensuite à encapsuler le 
+                layout.
+                b) Création d'un QListWidgetItem qui va permettre de placer
+                dans la QListWidget le QWidget.
+                c) Set de la size du WidgetItem en fonction de celle du layout
+                d) Ajout de WidgetItem dans la QListWidget
+                e) Association du QWidget au WidgetItem
+                f) Une fois la boucle terminée, ajout du widget mis à jour 
+                   dans le layout principal de la section "Saved".
+        Args : 
+            None.
+        Return : 
+            None.
+        """
+        if not isinstance(layout_list,list) : 
+            layout_list = [layout_list]
+        for layout in layout_list : 
+            widget_layout = QWidget()
+            widget_layout.setLayout(layout)
+            item_list = QListWidgetItem()
+            item_list.setSizeHint(widget_layout.sizeHint())
+            listwidget.addItem(item_list)
+            listwidget.setItemWidget(item_list,widget_layout)
+        self.saved_section_password_layout.addWidget(self.saved_section_password_listwidget)
+
+    def remove_password_from_list(self,row_int) : 
+        """
+        Desc : 
+            Section : Saved
+            Méthode d'action : 
+            Utilisée dans  : self.delete_button_clicked()
+
+            Ouvre une fenêtre de confirmation lors de la suppression de
+            la colonne. 
+            Supprime la colonne dont le numéro a été initialisé lors du
+            passage de la fonction self.delete_button_clicked()  : 
+                
+        Args : 
+            row_int (int) : Numéro de ligne de la QListWidget,
+                            initialisé lors du passage de la fonction 
+                            self.delete_button_clicked().
+        Return : 
+            None.
+        """
+        self.delete_confirm = self.create_confirm_box("Delete this password?")
+        if self.delete_confirm : 
+            self.saved_section_password_listwidget.takeItem(row_int)
+        else : 
+            return
+            # self.create_warning_box("Delete aborted.")  
 
     def create_saved_content_line_edit(self,
                                        content = "DefaultPassword",
@@ -884,7 +1021,7 @@ class myWindow(QMainWindow) :
         Desc : 
             Section : Saved
             Méthode de création : 
-            Crée un QLine Edit avec un content
+            Crée un QLine Edit avec un content. 
         Args : 
             password_file_url (str) : url du fichier .json contenant les données.
             hidden (bool) : set if password is hidden by default or not.
@@ -896,10 +1033,11 @@ class myWindow(QMainWindow) :
         """
         content = str(content)
         saved_content = QLineEdit(content)
-        saved_content.setMaximumHeight(self.max_item_height)
+        saved_content.setMaximumHeight(self.saved_section_line_edit_mxh)
         if hidden :
             saved_content.setEchoMode(QLineEdit.Password)
         if read_only :
+            saved_content.setStyleSheet(f"color:{self.not_available_color}")
             saved_content.setReadOnly(True)
         return saved_content
 
@@ -922,11 +1060,12 @@ class myWindow(QMainWindow) :
 
         modify_button = self.create_push_button(title = "", 
                                                 icon = self.modify_password_button_icon,
-                                                max_height = self.max_item_height)
+                                                min_height = self.saved_section_button_mns,
+                                                min_width = self.saved_section_button_mns)
         self.edit_sender_button_content = "Edit"
         return modify_button
 
-    def create_delete_password_button(self):
+    def create_delete_password_from_list_button(self):
         """
         Desc : 
             Section : Saved
@@ -941,19 +1080,22 @@ class myWindow(QMainWindow) :
             Un widget de type QPushButton.
         """
         delete_button = self.create_push_button(title = "", 
-                                                icon = self.delete_password_button_icon,
-                                                max_height = self.max_item_height)
+                                                icon = self.delete_password_from_list_button_icon,
+                                                min_height = self.saved_section_button_mns,
+                                                min_width = self.saved_section_button_mns)
         return delete_button
 
-    def save_changes_section(self,widget_list) : 
+    def save_line_edit_changes(self,widget_list) : 
         """
         Desc : 
             Section : Saved
             Méthode d'action : 
+            Utilisée dans  : self.modify_button_clicked()
             1) Modifie le display et le statut des QLine Edit quand le 
             bouton au statut "Save" est cliqué : 
-                a) Set les QlineEdit en readOnly et 
-                b) Change l'echoMode de celui identifié comme le password 
+                a) Set les QlineEdit en readOnly
+                b) Change la couleur du texte pour indiquer le non-available
+                c) Change l'echoMode de celui identifié comme le password 
                 pour cacher le texte.
             2) Passe la méthode qui permet d'update le fichier json.
         Args : 
@@ -963,21 +1105,24 @@ class myWindow(QMainWindow) :
         """
         for widget in widget_list :
             widget.setReadOnly(True)
+            widget.setStyleSheet(f"color:{self.not_available_color}")
+
             for id, data in self.data_array_dict.items() : 
                 if widget == data : 
                     if id%2 != 0 :
                         widget.setEchoMode(QLineEdit.Password)
 
-        print("self.data_array_dict est le dictionnaire essentiel de GESTION")
-        print("self.data_base est le dictionnaire essentiel de STOCKAGE")
+        # print("self.data_array_dict est le dictionnaire essentiel de GESTION")
+        # print("self.data_base est le dictionnaire essentiel de STOCKAGE")
 
         self.save_password_dict_to_json(self.user_data_file)
 
-    def make_editable_section(self,widget_list) : 
+    def make_line_edit_editable(self,widget_list) : 
         """
         Desc : 
             Section : Saved
             Méthode d'action : 
+            Utilisée dans  : self.modify_button_clicked()
             Modifie le display et le statut des QLine Edit quand le 
             bouton au statut "Edit" est cliqué : 
                 a) Set les QlineEdit en write
@@ -990,10 +1135,12 @@ class myWindow(QMainWindow) :
         """
         for widget in widget_list :
             if widget.isReadOnly() : 
+                widget.setStyleSheet(f"color:{self.available_color}")
                 widget.setReadOnly(False)
                 widget.setEchoMode(QLineEdit.Normal)
+
     @Slot()
-    def modify_action_button(self) : 
+    def modify_button_clicked(self) : 
         """
         Desc : 
             Section : Saved
@@ -1018,32 +1165,42 @@ class myWindow(QMainWindow) :
 
         if self.edit_sender_button_content == "Edit" :
             sender_button.setIcon(QIcon(self.save_password_button_icon))
-            self.make_editable_section(line_edit_list)
+            self.make_line_edit_editable(line_edit_list)
             self.edit_sender_button_content = "Save"
 
         elif self.edit_sender_button_content == "Save" : 
             sender_button.setIcon(QIcon(self.modify_password_button_icon))
-            self.save_changes_section(line_edit_list)
+            self.save_line_edit_changes(line_edit_list)
             self.edit_sender_button_content = "Edit"
 
-    def delete_action_button(self) : 
-        pass
-
-    def create_save_password_button(self):
+    @Slot()
+    def delete_button_clicked(self) : 
         """
         Desc : 
             Section : Saved
-            Méthode de création : 
-            Permet de créer le QPushButton "Save" de la section "Saved".
+            Méthode d'évènement : 
+            Permet de retrouver la ligne correspondante au bouton cliqué
+            ainsi que la référence du mot de passe correspondant,afin de 
+            pouvoir lancer les méthodes d'actions permettant de supprimer
+            la ligne visée.
         Args : 
             None.
         Return : 
-            Un QWidget de type QPushButton.
+            None.
         """
-        save_button = self.create_push_button(title = "", 
-                                                icon = self.save_password_button_icon,
-                                                max_height = self.max_item_height)
-        return save_button
+        sender_button = self.sender()
+        button_parent = sender_button.parentWidget()
+        list_range = self.saved_section_password_listwidget.count()
+        for idx in range(list_range) : 
+            widget_item = self.saved_section_password_listwidget.item(idx)
+            widget = self.saved_section_password_listwidget.itemWidget(widget_item)
+            if button_parent == widget :
+                widget_children = widget.findChildren(QLineEdit)
+                self.password_to_delete = widget_children[0].text()
+                self.reference_to_delete = widget_children[1].text()
+                row_to_delete = self.saved_section_password_listwidget.row(widget_item)
+                self.remove_password_from_list(row_to_delete)
+                self.remove_password_from_json_dict()
 
     def create_existing_passwords_row_layout(self,reference,password):
         """
@@ -1057,6 +1214,8 @@ class myWindow(QMainWindow) :
             la section "Saved" : 
                 a) Création des deux lineEdit remplis et customisés dans la 
                 méthode de création "create_saved_content_line_edit".
+                Ils sont initalisés en not available (méthode en readOnly par 
+                défaut).
                 b) Création des deux boutons Edit et Delete, et association
                 de leur méthode d'evenement respectives
                 c) Création du layout horizontal et accueil de tous les 
@@ -1075,12 +1234,14 @@ class myWindow(QMainWindow) :
             Une liste composée des deux QLineEdit et du layout horizontal.
         """
         password_line_edit = self.create_saved_content_line_edit(content = password)
+
         reference_line_edit = self.create_saved_content_line_edit(content = reference, 
                                                                   hidden = False)
+
         button_line_edit = self.create_modify_password_button()
-        button_line_edit.clicked.connect(self.modify_action_button)
-        button_line_delete = self.create_delete_password_button()
-        button_line_delete.clicked.connect(self.delete_action_button)
+        button_line_edit.clicked.connect(self.modify_button_clicked)
+        button_line_delete = self.create_delete_password_from_list_button()
+        button_line_delete.clicked.connect(self.delete_button_clicked)
 
         existing_passwords_layout = QHBoxLayout()
         existing_passwords_layout.addWidget(password_line_edit)
@@ -1123,39 +1284,6 @@ class myWindow(QMainWindow) :
         
         return layout_list
     
-    def add_to_password_list(self,layout_list,listwidget):
-        """
-        Desc : 
-            Section : Saved
-            Méthode d'ajout : 
-            Utilisée dans : self.create_saved_section_password_layout()
-                        
-            Permet d'ajouter à une QListWidget une liste de layout: 
-                a) Création d'un QWidget qui sert ensuite à encapsuler le 
-                layout.
-                b) Création d'un QListWidgetItem qui va permettre de placer
-                dans la QListWidget le QWidget.
-                c) Set de la size du WidgetItem en fonction de celle du layout
-                d) Ajout de WidgetItem dans la QListWidget
-                e) Association du QWidget au WidgetItem
-                f) Une fois la boucle terminée, ajout du widget mis à jour 
-                   dans le layout principal de la section "Saved".
-        Args : 
-            None.
-        Return : 
-            None.
-        """
-        if not isinstance(layout_list,list) : 
-            layout_list = [layout_list]
-        for layout in layout_list : 
-            widget_layout = QWidget()
-            widget_layout.setLayout(layout)
-            item_list = QListWidgetItem()
-            item_list.setSizeHint(widget_layout.sizeHint())
-            listwidget.addItem(item_list)
-            listwidget.setItemWidget(item_list,widget_layout)
-        self.saved_section_password_layout.addWidget(self.saved_section_password_listwidget)
-
     def create_saved_section_password_layout(self):
         """
         Desc : 
@@ -1180,6 +1308,13 @@ class myWindow(QMainWindow) :
             title = "Saved Passwords", 
             layout_list = [self.saved_section_password_layout])
 
+# SUITE - TROUVER UN AUTRE SYSTEME POUR REMPLACER LE DATA_DICT_ARRAY
+#       - TRIER LES METHODES DE LA SECTION SAVED POUR QU'ELLES SOIENT 
+#         COHERENTES AVEC LES METHODES DE LA SECTION GENERATE.
+
+# EXTRA - AJOUTER LE MOT DE PASSE DE LA SESSION WINDOWS POUR ACCEDER AUX
+#         INFORMATIONS SENSIBLES (Mot de passe cachés)
+
 if __name__ == "__main__" : 
     app = QApplication(sys.argv)
     main_icon = sys.argv[1] if len(sys.argv) > 1 else "icons/logo.ico"
@@ -1187,5 +1322,3 @@ if __name__ == "__main__" :
     main_window = myWindow(main_title,main_icon)
     main_window.show()
     sys.exit(app.exec())
-
-    # SAVED SECTION CONSTRUCTION &&

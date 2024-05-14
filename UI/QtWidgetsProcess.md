@@ -94,3 +94,24 @@ for layout in layout_list :
         listwidget.setItemWidget(item_list,widget_layout)
 
 main_layout.addWidget(listwidget)
+
+# Found QWidget in QListWidget :
+
+On peut trouver le QWidget correspondant au bouton cliqué en passant par deux méthodes successives de la classe QListWidget :
+QListWidget.item(int) 
+QListWidget.itemWidget(QListWidgetItem)
+
+Elles s'utilisent comme suit dans le contexte suivant :
+On utilise une QListWidget "list_widget_item" contenant des layouts encapsulés dans des QWidget comme plus haut, et associés à des QWidgetItem.
+
+## Python : 
+
+list_lenght = list_widget_item.count()
+list_content_widget = []
+for idx in range(list_lenght) :
+        widget_item = list_widget_item.item(idx)
+        widget = list_widget_item.itemWidget(widget_item)
+        list_content_widget.append(widget)
+
+On obtient une liste de tous les items présents dans la QListWidget. On peut alors utiliser la méthode .findChildren pour retrouver les composants spécifiques qui nous intéresse. 
+On peut aussi l'utiliser pour trouver quel QWidgetItem correspond par exemple au bouton cliqué (pour dans le cas où on aurait besoin d'un bouton qui permet supprimer sa ligne de liste)
