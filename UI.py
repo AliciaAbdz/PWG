@@ -85,7 +85,7 @@ class myWindow(QMainWindow) :
         # Data variables : 
         self.user_data_file = "password_data/password_data.json"
 
-        # Window construction :
+        # # Window construction :
         self.create_central_widget()
 
         self.create_section_all_methods_items()
@@ -174,11 +174,11 @@ class myWindow(QMainWindow) :
         
         """
         all_tabs_dict = {
-                        "Generate":[self.essential_groupbox,
-                                        self.optionnal_groupbox,
-                                        self.generate_password_groupbox,
-                                        self.validate_buttons_groupbox
-                                        ],
+                        # "Generate":[self.essential_groupbox,
+                        #                 self.optionnal_groupbox,
+                        #                 self.generate_password_groupbox,
+                        #                 self.validate_buttons_groupbox
+                        #                 ],
                         "Saved":[self.saved_password_groupbox # SAVED SECTION CONSTRUCTION &&
                                     ]}
         self.all_tabs = self.create_menu_tab(tab_dict=all_tabs_dict)
@@ -1046,12 +1046,19 @@ class myWindow(QMainWindow) :
         Desc : 
             Section : Saved
             Méthode de création : 
-            Crée le QPushButton qui permet d'éditer les mots de passe pour 
+            a) Crée le QPushButton qui permet d'éditer les mots de passe pour 
             chaque layout qui se trouve dans la QListWidget de la section 
             "Saved" du programme.
-            Set un adjectif de statut qui permettra de savoir le
-            current state du bouton et qui sera modifié à chaque click du 
-            button.
+            b) Set une variable de statut "sender_button_content", 
+            qui permettra de savoir le current state du bouton et qui sera
+            modifié à chaque click du button.
+            c) Set une variable "current_edit_button" permettant de savoir si 
+            la session d'édition du mot de passe ou de sa référence est bien 
+            fermée (édition d'une ligne à la fois maximum acceptée). A chaque
+            passage de la fonction de sauvegarde, cete variable est remise
+            à zéro. Elle est checkée à chaque passage de la fonction d'édition.
+            Si le bouton cliqué enregistré.
+
         Args : 
             None.
         Return : 
@@ -1062,7 +1069,9 @@ class myWindow(QMainWindow) :
                                                 icon = self.modify_password_button_icon,
                                                 min_height = self.saved_section_button_mns,
                                                 min_width = self.saved_section_button_mns)
-        self.edit_sender_button_content = "Edit"
+        self.sender_button_content = None
+        self.current_edit_button = None
+
         return modify_button
 
     def create_delete_password_from_list_button(self):
@@ -1103,6 +1112,10 @@ class myWindow(QMainWindow) :
         Return : 
             None.
         """
+        self.current_edit_button = None
+        print("Button is not in edit mode anymore ; "
+              "Current edit button is now : ",self.current_edit_button)
+
         for widget in widget_list :
             widget.setReadOnly(True)
             widget.setStyleSheet(f"color:{self.not_available_color}")
@@ -1114,9 +1127,19 @@ class myWindow(QMainWindow) :
 
         # print("self.data_array_dict est le dictionnaire essentiel de GESTION")
         # print("self.data_base est le dictionnaire essentiel de STOCKAGE")
+        if widget_list[0].text() != self.init_password \
+        or widget_list[1].text() != self.init_reference:
+            confirmed = self.create_confirm_box("Save modifications?")
+            if confirmed :
+                self.save_password_dict_to_json(self.user_data_file)
 
-        self.save_password_dict_to_json(self.user_data_file)
-
+            else : 
+                widget_list[0].setText(self.init_password)
+                widget_list[1].setText(self.init_reference)
+        else : 
+            return
+        
+        
     def make_line_edit_editable(self,widget_list) : 
         """
         Desc : 
@@ -1156,6 +1179,26 @@ class myWindow(QMainWindow) :
         """
         sender_button = self.sender() # Permet de savoir quel bouton 
                                       # a envoyé le signal
+
+        print("Button is clicked now, on edit or save mode ; "
+              "Current edit button is now : ", 
+              sender_button)
+        print("Previous button used was object : ", 
+              self.current_edit_button)
+
+        if self.sender_button_content == None : 
+            self.sender_button_content = "Edit"
+
+        if self.current_edit_button == None : 
+            self.current_edit_button = sender_button
+        else: 
+            if self.current_edit_button != sender_button : 
+                print("Previous edit section not closed")
+                self.create_warning_box("Please save present edition.")
+                return 
+            else : 
+                pass
+        
         button_parent = sender_button.parentWidget() # Trouve le parent du 
                                                      # bouton émeteur, ici  
                                                      # c'est un Qwidget
@@ -1163,15 +1206,18 @@ class myWindow(QMainWindow) :
         # La méthode "findChildren trouve les enfants du parent # QWidget de 
         # type QLineEdit
 
-        if self.edit_sender_button_content == "Edit" :
+        if self.sender_button_content == "Edit" :
+            self.init_sender_button = self.sender()
+            self.init_password = line_edit_list[0].text()
+            self.init_reference = line_edit_list[1].text()
             sender_button.setIcon(QIcon(self.save_password_button_icon))
             self.make_line_edit_editable(line_edit_list)
-            self.edit_sender_button_content = "Save"
+            self.sender_button_content = "Save"
 
-        elif self.edit_sender_button_content == "Save" : 
+        elif self.sender_button_content == "Save" : 
             sender_button.setIcon(QIcon(self.modify_password_button_icon))
             self.save_line_edit_changes(line_edit_list)
-            self.edit_sender_button_content = "Edit"
+            self.sender_button_content = "Edit"
 
     @Slot()
     def delete_button_clicked(self) : 
