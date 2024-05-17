@@ -34,7 +34,6 @@ class PasswordDisplay:
     def show(self) : 
         self.qline_edit.setEchoMode(QLineEdit.Normal)
 
-
 class myWindow(QMainWindow) : 
 
     def __init__(self, title, icon_path) :
@@ -71,6 +70,7 @@ class myWindow(QMainWindow) :
         self.NOT_AVAILABLE_COLOR = "#646464"
         self.AVAILABLE_COLOR = "#000000"
 
+        self.VALIDATE_WINDOW_ICON = "icons/validate-icon.ico"
         self.WARNING_WINDOW_ICON = "icons/warning-icon.ico"
         self.SAVE_NOT_AVAILABLE_ICON = "icons/save_not_available.ico"     
         self.SAVE_ICON = "icons/SAVE_ICON.ico"     
@@ -101,6 +101,20 @@ class myWindow(QMainWindow) :
         self.tabs_main_layout()
 
     # Message boxes :
+    def create_validate_box(self, message = ""):
+        """
+        Desc : 
+            Ouvre une fenêtre de validatation contenant un message
+        Args : 
+            message (str) : le message à l'attention de l'utilisateur.
+        Return : 
+            None.
+        """
+        error_box = QMessageBox()
+        error_box.setWindowTitle("Message")
+        error_box.setWindowIcon(QIcon(self.VALIDATE_WINDOW_ICON))
+        error_box.setText(message)
+        error_box.exec()
 
     def create_warning_box(self, message = ""):
         """
@@ -187,13 +201,13 @@ class myWindow(QMainWindow) :
         for widget in data_list : 
             children = widget.findChildren(QLineEdit)
             if child == "R" : 
-                child = children[self.REFERENCE_IDX].text()
+                widget_child = children[self.REFERENCE_IDX].text()
             elif child == "P" : 
-                child = children[self.PASSWORD_IDX].text()
+                widget_child = children[self.PASSWORD_IDX].text()
             else : 
                 raise ValueError("Only 'R' and 'P' string flags are supported "
                                  "for child arg.")
-            new_data_list_widget.append(child)
+            new_data_list_widget.append(widget_child)
         return new_data_list_widget
 
     # Main window methods :
@@ -791,7 +805,7 @@ class myWindow(QMainWindow) :
             ref_dialog = QInputDialog()
             ref_dialog.setWindowTitle("Reference Name")
             ref_dialog.setWindowIcon(QIcon(self.main_icon))
-            ref_dialog.setLabelText("Password ref name : ")
+            ref_dialog.setLabelText("Password reference / account : ")
             ref_dialog.exec()
             self.ref_output = ref_dialog.textValue()
 
@@ -805,6 +819,7 @@ class myWindow(QMainWindow) :
                 self.add_to_password_list(layout, self.saved_section_psswd_listwidget)
                 if self.double_name_check :
                     self.add_password_to_json_file()
+                    self.create_validate_box("Password saved !")
 
             else : 
                 self.create_warning_box("Saving aborted.")
@@ -1307,6 +1322,7 @@ class myWindow(QMainWindow) :
             self.init_sender_button = self.sender()
             self.init_psswd = line_edit_list[self.PASSWORD_IDX].text()
             self.init_ref = line_edit_list[self.REFERENCE_IDX].text()
+            self.data_list_widget.remove(self.init_ref)
             sender_button.setIcon(QIcon(self.SAVE_ICON))
             self.make_line_edit_editable(line_edit_list)
             # Change sender button status
@@ -1425,15 +1441,14 @@ class myWindow(QMainWindow) :
         self.all_tabs = self.create_menu_tab(tab_dict = all_tabs_dict)
         self.central_layout.addWidget(self.all_tabs)
 
-# SUITE - 
-#       - TRIER LES METHODES DE LA SECTION SAVED POUR QU'ELLES SOIENT 
-#         COHERENTES AVEC LES METHODES DE LA SECTION GENERATE.
+# SUITE : 
 #       - FAIRE UN CHECK PEP 8
 
 # EXTRA - AJOUTER LE MOT DE PASSE DE LA SESSION WINDOWS POUR ACCEDER AUX
 #         INFORMATIONS SENSIBLES (Mot de passe cachés)
 
 def create_main_window() : 
+    
     app = QApplication(sys.argv)
     main_icon = sys.argv[1] if len(sys.argv) > 1 else "icons/logo.ico"
     main_title = "Password Manager"
