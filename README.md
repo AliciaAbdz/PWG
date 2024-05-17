@@ -18,10 +18,11 @@ __EN__ : This project uses Python 3.12.2.
 __FR__ : Ce projet utilise Python 3.12.2.
      Executez le PasswordManager.exe pour une utilisation directe.
 
-# __Informations additionnelles__
+## __Informations additionnelles__
 
 __EN__ : 
 Data is stored for now in a .json file. 
+
 __FR__ : 
 Les données sont stockées pour le moment dans un fichier .json.
 
@@ -29,7 +30,7 @@ Les données sont stockées pour le moment dans un fichier .json.
 
 __EN__ : 
 
-# Generate section:
+### Generate section:
 1) Choose the options you want for your password:
     The password must **mandatory** have at least letters, numbers or special characters.
     The password can **optionally** be case sensitive, and include regular "-" type separators, include or exclude the characters of your choice.
@@ -41,7 +42,7 @@ __EN__ :
     - Click "OK".
     - Your password is now available in the "Saved" section
 
-# Saved section:
+### Saved section:
 
 In this section it is possible to:
 1) Edit/View your passwords using the button representing a pen.
@@ -51,7 +52,7 @@ In this section it is possible to:
 
 __FR__ : 
 
-# Section Generate : 
+### Section Generate : 
 1) Choisissez les options que vous voulez pour votre mot de passe : 
     Le mot de passe doit **obligatoirement** avoir au moins des lettres, des nombres ou des caractères spéciaux.
     Le mot de passe peut **optionnellement** être sensible à la casse, et inclure des séparateurs réguliers de type " - ", inclure ou exclure les caractères de votre choix.
@@ -63,7 +64,7 @@ __FR__ :
     - Cliquez sur "OK".
     - Votre mot de passe est désormais disponible dans la section "Saved"
 
-# Section Saved : 
+### Section Saved : 
 
 Dans cette section il est possibe de : 
 1) Editer/Consulter vos mots de passe grâce au bouton représentant un stylo. 
