@@ -115,6 +115,26 @@ class myWindow(QMainWindow) :
         error_box.setText(message)
         error_box.exec()
 
+    def get_widget_list(self,widget_list) :
+        """
+        Desc : 
+            Permet de récupérer une liste des widgets présent dans une QListWidget
+        Args : 
+            widget_list (QListWidget) : La QListWidget dont il faut extraire les données.
+        Return : 
+            list_content_widget (list) : Une variable de type list contenant des éléments
+                                         de type QWidget.
+        """
+        if not isinstance(widget_list,QListWidget) :
+            raise TypeError("Need QListWidget class.")
+        list_content_widget = []
+        list_range = widget_list.count()
+        for idx in range(list_range):
+            item_widget = widget_list.item(idx)
+            widget = widget_list.itemWidget(item_widget)
+            list_content_widget.append(widget)
+        return list_content_widget
+
     def create_confirm_box(self,
                            message = "Voulez-vous confirmer?", 
                            conf="Confirm",
@@ -174,11 +194,11 @@ class myWindow(QMainWindow) :
         
         """
         all_tabs_dict = {
-                        # "Generate":[self.essential_groupbox,
-                        #                 self.optionnal_groupbox,
-                        #                 self.generate_password_groupbox,
-                        #                 self.validate_buttons_groupbox
-                        #                 ],
+                        "Generate":[self.essential_groupbox,
+                                        self.optionnal_groupbox,
+                                        self.generate_password_groupbox,
+                                        self.validate_buttons_groupbox
+                                        ],
                         "Saved":[self.saved_password_groupbox # SAVED SECTION CONSTRUCTION &&
                                     ]}
         self.all_tabs = self.create_menu_tab(tab_dict=all_tabs_dict)
@@ -764,7 +784,7 @@ class myWindow(QMainWindow) :
         Desc : 
             Méthode d'évènement : 
             Permet de copier le mot de passe généré dans le presse-papier à 
-            l'aide de tkinter. D'
+            l'aide de tkinter.
         Args : 
             None.
         Return : 
@@ -795,8 +815,6 @@ class myWindow(QMainWindow) :
             la référence auprès de l'utilisateur.
             A partir de ces données, on crée le nouveau layout horizontal,
             Puis on l'ajoute à la QListWidget,
-            Puis on ajoute les données au self.data_array_dict qui contient
-            des identifiants pour chaque QWidget.
             Si rien n'est entré dans le QDialog, un QMessageBox s'ouvre pour
             informer l'utilisateur que rien n'a été sauvegardé.
         Args : 
@@ -805,6 +823,8 @@ class myWindow(QMainWindow) :
             None.
         
         """
+        # Update list to check validate names : 
+        self.data_list_widget = self.get_data_list_widget()
         self.password_output = self.password_line_edit.text()
 
         if self.password_output : 
@@ -825,14 +845,9 @@ class myWindow(QMainWindow) :
                 self.new_reference_to_save = new_row[1]
                 layout = new_row[2]
                 self.add_to_password_list(layout,self.saved_section_password_listwidget)
-                self.add_password_to_json_file()
-                if self.data_array_dict :
-                    last_id = int(list(self.data_array_dict.keys())[-1])
-                else : 
-                    last_id = 0
-                self.data_array_dict[last_id+1] = new_row[0]
-                self.data_array_dict[last_id+2] = new_row[1]
-                print(self.data_array_dict)
+                if self.double_name_check :
+                    self.add_password_to_json_file()
+
             else : 
                 self.create_warning_box("Saving aborted.")
 
@@ -903,8 +918,9 @@ class myWindow(QMainWindow) :
             Utilisée dans : self.save_line_edit_changes()
 
             Permet d'update le fichier json avec le nouveau dictionnaire 
-            de stockage "self.data_base", recréé à partir du dictionnaire 
-            de gestion "self.data_array_dict".
+            de stockage "self.data_base", recréé des widgets de la liste 
+            trouvés grâce aux items de la liste associés 
+            (# Found QWidget in QListWidget).
         Args : 
             password_file_url (str) : url du fichier .json contenant les 
                                       données.
@@ -913,10 +929,13 @@ class myWindow(QMainWindow) :
         
         """
         self.data_base = {}
-        for id,data in self.data_array_dict.items() : 
-            if id%2 != 0 : 
-                self.data_base[self.data_array_dict[id+1].text()] = data.text()
-        
+        list_content_widget = self.get_widget_list(self.saved_section_password_listwidget)
+        for widget in list_content_widget : 
+            line_edit_children_list = widget.findChildren(QLineEdit)
+            password = line_edit_children_list[0].text()
+            reference = line_edit_children_list[1].text()
+            self.data_base[reference] = password
+
         json_dict = json.dumps(self.data_base,indent = 4)
         with open(password_file_url, "w") as outfile:
             outfile.write(json_dict)
@@ -937,19 +956,7 @@ class myWindow(QMainWindow) :
         """
         if self.delete_confirm :
             self.data_base.pop(self.reference_to_delete)
-            key_to_pop_list = []
-            for key,value in self.data_array_dict.items():
-                value = value.text()
-                if value == self.reference_to_delete \
-                or value == self.password_to_delete: 
-                    key_to_pop_list.append(key)
-
-            for key in key_to_pop_list :
-                self.data_array_dict.pop(key)
-
-            for key,value in self.data_array_dict.items() :
-                print(key, " : ", value.text())
-                
+            
             json_dict = json.dumps(self.data_base,indent = 4)
             with open(self.user_data_file, "w") as outfile:
                 outfile.write(json_dict)
@@ -967,9 +974,10 @@ class myWindow(QMainWindow) :
                 b) Création d'un QListWidgetItem qui va permettre de placer
                 dans la QListWidget le QWidget.
                 c) Set de la size du WidgetItem en fonction de celle du layout
-                d) Ajout de WidgetItem dans la QListWidget
-                e) Association du QWidget au WidgetItem
-                f) Une fois la boucle terminée, ajout du widget mis à jour 
+                d) Check des doublons dans la liste
+                e) Ajout de WidgetItem dans la QListWidget
+                f) Association du QWidget au WidgetItem
+                g) Une fois la boucle terminée, ajout du widget mis à jour 
                    dans le layout principal de la section "Saved".
         Args : 
             None.
@@ -981,11 +989,46 @@ class myWindow(QMainWindow) :
         for layout in layout_list : 
             widget_layout = QWidget()
             widget_layout.setLayout(layout)
+            children = widget_layout.findChildren(QLineEdit)
+            ref = [x.text() for x in children][1]
             item_list = QListWidgetItem()
             item_list.setSizeHint(widget_layout.sizeHint())
+            # Check unique reference name 
+            self.double_name_check = self.validate_double_reference_names(widget_layout)
+            if not self.double_name_check :
+                return
+            self.data_list_widget.append(ref)
             listwidget.addItem(item_list)
             listwidget.setItemWidget(item_list,widget_layout)
+        print("data list is",self.data_list_widget)
+
         self.saved_section_password_layout.addWidget(self.saved_section_password_listwidget)
+
+    def validate_double_reference_names(self,widget):
+        """
+        Desc : 
+            Section : Saved
+            Méthode de vérification : 
+            Utilisée dans : self.save_line_edit_changes()
+                            add_to_password_list()
+                        
+            Permet de checker les doublons de nom de référence d'un widget 
+            contenant deux QLineEdit.
+        Args : 
+            widget(QWidget) : Le layout horizontal contenant 2
+                              QLineEdit.
+        Return : 
+            unique_name_checked (bool) : Un booléen qui informe du statut
+                                         du check.
+        """
+        unique_name_checked = True
+        widget_children = widget.findChildren(QLineEdit)
+        reference = widget_children[1].text()
+        if reference in self.data_list_widget :
+            self.create_warning_box(f"\"{reference}\" already exists as reference.\n"
+                                    "Please enter a unique name.")
+            unique_name_checked = False
+        return unique_name_checked
 
     def remove_password_from_list(self,row_int) : 
         """
@@ -1106,39 +1149,43 @@ class myWindow(QMainWindow) :
                 b) Change la couleur du texte pour indiquer le non-available
                 c) Change l'echoMode de celui identifié comme le password 
                 pour cacher le texte.
-            2) Passe la méthode qui permet d'update le fichier json.
+            2) Effectue les vérifications d'usage et sauvegarde les changements :
+                a) Vérifie s'il y a des changements dans les line_edits.
+                b) Vérifie les doublons.
+                c) Ouvre une fenetre de confirmation.
+                d) Passe la méthode qui permet d'update le fichier json.
         Args : 
-            widget_list : liste des QlineEdit du parent du button cliqué.
+            widget_list (list) : liste des QlineEdit du parent du button cliqué.
         Return : 
             None.
         """
         self.current_edit_button = None
-        print("Button is not in edit mode anymore ; "
-              "Current edit button is now : ",self.current_edit_button)
 
         for widget in widget_list :
             widget.setReadOnly(True)
             widget.setStyleSheet(f"color:{self.not_available_color}")
 
-            for id, data in self.data_array_dict.items() : 
-                if widget == data : 
-                    if id%2 != 0 :
-                        widget.setEchoMode(QLineEdit.Password)
+        current_password = widget_list[0]
+        current_reference = widget_list[1]
+        current_password.setEchoMode(QLineEdit.Password)
 
-        # print("self.data_array_dict est le dictionnaire essentiel de GESTION")
-        # print("self.data_base est le dictionnaire essentiel de STOCKAGE")
-        if widget_list[0].text() != self.init_password \
-        or widget_list[1].text() != self.init_reference:
-            confirmed = self.create_confirm_box("Save modifications?")
-            if confirmed :
-                self.save_password_dict_to_json(self.user_data_file)
-
+        if current_password.text() != self.init_password \
+        or current_reference.text() != self.init_reference:
+            widget_parent = current_password.parentWidget()
+            # Check unique reference name 
+            self.double_name_check = self.validate_double_reference_names(widget_parent)
+            if self.double_name_check :
+                confirmed = self.create_confirm_box("Save modifications?")
+                if confirmed :
+                    self.save_password_dict_to_json(self.user_data_file)
+                else : 
+                    current_password.setText(self.init_password)
+                    current_reference.setText(self.init_reference)
             else : 
-                widget_list[0].setText(self.init_password)
-                widget_list[1].setText(self.init_reference)
+                current_password.setText(self.init_password)
+                current_reference.setText(self.init_reference)
         else : 
             return
-        
         
     def make_line_edit_editable(self,widget_list) : 
         """
@@ -1162,6 +1209,37 @@ class myWindow(QMainWindow) :
                 widget.setReadOnly(False)
                 widget.setEchoMode(QLineEdit.Normal)
 
+    def get_data_list_widget(self,child = "R") :
+        """
+        Desc : 
+            Section : Saved
+            Méthode de gestion : 
+            Utilisée dans  : self.save_password()
+                             self.modify_button_clicked()
+                             self.delete_button_clicked()
+            Récupère la liste des références (par défaut) ou des passwords,
+            à partir de la liste principale actuelle. 
+            A utiliser lors d'évènements utilisants des méthodes visant à 
+            modifier la liste.
+        Args : 
+            child(str) : "R" pour référence, "P" pour password
+        Return : 
+            new_data_list_widget (list) : Une liste de datas de type string.
+        """
+        new_data_list_widget = []
+        data_list = self.get_widget_list(self.saved_section_password_listwidget)
+        for widget in data_list : 
+            children = widget.findChildren(QLineEdit)
+            if child == "R" : 
+                child = children[1].text()
+            elif child == "P" : 
+                child = children[0].text()
+            else : 
+                raise ValueError("Only 'R' and 'P' string flags are supported "
+                                 "for child arg.")
+            new_data_list_widget.append(child)
+        return new_data_list_widget
+
     @Slot()
     def modify_button_clicked(self) : 
         """
@@ -1180,18 +1258,13 @@ class myWindow(QMainWindow) :
         sender_button = self.sender() # Permet de savoir quel bouton 
                                       # a envoyé le signal
 
-        print("Button is clicked now, on edit or save mode ; "
-              "Current edit button is now : ", 
-              sender_button)
-        print("Previous button used was object : ", 
-              self.current_edit_button)
-
         if self.sender_button_content == None : 
             self.sender_button_content = "Edit"
 
         if self.current_edit_button == None : 
             self.current_edit_button = sender_button
         else: 
+            # Check line edition mode closed : 
             if self.current_edit_button != sender_button : 
                 print("Previous edit section not closed")
                 self.create_warning_box("Please save present edition.")
@@ -1203,15 +1276,17 @@ class myWindow(QMainWindow) :
                                                      # bouton émeteur, ici  
                                                      # c'est un Qwidget
         line_edit_list = button_parent.findChildren(QLineEdit)
-        # La méthode "findChildren trouve les enfants du parent # QWidget de 
-        # type QLineEdit
 
         if self.sender_button_content == "Edit" :
+            # Update list to check validate names : 
+            self.data_list_widget = self.get_data_list_widget()
+            # Get init password and reference and make line editable
             self.init_sender_button = self.sender()
             self.init_password = line_edit_list[0].text()
             self.init_reference = line_edit_list[1].text()
             sender_button.setIcon(QIcon(self.save_password_button_icon))
             self.make_line_edit_editable(line_edit_list)
+            # Change sender button status
             self.sender_button_content = "Save"
 
         elif self.sender_button_content == "Save" : 
@@ -1235,6 +1310,10 @@ class myWindow(QMainWindow) :
             None.
         """
         sender_button = self.sender()
+        # Check line edition mode closed : 
+        if self.current_edit_button != None : 
+            self.create_warning_box("Please save present edition.")
+            return
         button_parent = sender_button.parentWidget()
         list_range = self.saved_section_password_listwidget.count()
         for idx in range(list_range) : 
@@ -1247,6 +1326,8 @@ class myWindow(QMainWindow) :
                 row_to_delete = self.saved_section_password_listwidget.row(widget_item)
                 self.remove_password_from_list(row_to_delete)
                 self.remove_password_from_json_dict()
+                # Update list to check validate names : 
+                self.data_list_widget = self.get_data_list_widget()
 
     def create_existing_passwords_row_layout(self,reference,password):
         """
@@ -1306,10 +1387,7 @@ class myWindow(QMainWindow) :
                         
             Permet de créer tous les layouts qui vont servir pour la 
             QListWidget.
-            Crée le self.data_array_dict : 
-                Ce dictionnaire de gestion marche sur le principe suivant : 
-                - Une clé impaire représente un QLineEdit référence.
-                - Une clé paire représente un QLineEdit mot de passe.
+
         Args : 
             None.
         Return : 
@@ -1317,14 +1395,8 @@ class myWindow(QMainWindow) :
         """
         layout_list = []
         self.data_base = self.get_password_dict_from_json(self.user_data_file)
-        self.data_array_dict = {}
-        id = 0
         for reference, password in self.data_base.items() : 
-            id +=1 
             row = self.create_existing_passwords_row_layout(reference,password)
-            self.data_array_dict[id] = row[0]
-            id +=1 
-            self.data_array_dict[id] = row[1]
             layout = row[2]
             layout_list.append(layout)
         
@@ -1348,15 +1420,17 @@ class myWindow(QMainWindow) :
         """
         layout_list = self.create_saved_content()
         self.saved_section_password_layout = QVBoxLayout()
+        self.data_list_widget = []
         self.saved_section_password_listwidget = QListWidget()
         self.add_to_password_list(layout_list,self.saved_section_password_listwidget)
         self.saved_password_groupbox = self.create_groupbox(
             title = "Saved Passwords", 
             layout_list = [self.saved_section_password_layout])
 
-# SUITE - TROUVER UN AUTRE SYSTEME POUR REMPLACER LE DATA_DICT_ARRAY
+# SUITE - 
 #       - TRIER LES METHODES DE LA SECTION SAVED POUR QU'ELLES SOIENT 
 #         COHERENTES AVEC LES METHODES DE LA SECTION GENERATE.
+#       - FAIRE UN CHECK PEP 8
 
 # EXTRA - AJOUTER LE MOT DE PASSE DE LA SESSION WINDOWS POUR ACCEDER AUX
 #         INFORMATIONS SENSIBLES (Mot de passe cachés)
