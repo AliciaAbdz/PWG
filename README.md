@@ -1,2 +1,2 @@
 # PWG
- Secured Password Generator
+ Secured Password Generator & Manager
